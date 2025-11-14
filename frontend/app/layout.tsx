@@ -3,11 +3,12 @@ import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import "./globals.css"
 
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Musicly - Music Streaming Admin Panel',
-  description: 'Manage your music streaming platform with Musicly Admin',
+  title: 'Musicly - Your Music Streaming App',
+  description: 'Stream your favorite music with Musicly',
 }
 
 export default function RootLayout({
