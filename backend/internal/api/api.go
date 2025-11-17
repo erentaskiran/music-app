@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"music-app/backend/internal/api/auth"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,7 +20,10 @@ func NewRouter(db *sql.DB) *Router {
 
 func (r *Router) NewRouter() *mux.Router {
 	router := mux.NewRouter()
+	h := auth.NewAuthHandler(r.Db)
 	router.HandleFunc("/api/health", r.HealthCheckHandler).Methods(http.MethodGet)
+	router.HandleFunc("/api/register", h.RegisterHandler).Methods(http.MethodPost)
+	router.HandleFunc("/api/login", h.LoginHandler).Methods(http.MethodPost)
 
 	return router
 }

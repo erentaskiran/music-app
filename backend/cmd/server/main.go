@@ -2,9 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"erentaskiran/music-app/backend/internal/api"
-	"erentaskiran/music-app/backend/pkg/db"
 	"fmt"
+	"music-app/backend/internal/api"
+	"music-app/backend/pkg/db"
 	"net/http"
 	"os"
 
