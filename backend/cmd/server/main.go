@@ -18,11 +18,19 @@ type App struct {
 func main() {
 	_ = godotenv.Load()
 	DbURL := os.Getenv("DATABASE_URL")
+	if DbURL == "" {
+		fmt.Println("DATABASE_URL not set")
+		os.Exit(1)
+	}
 
 	db := db.InitDB(DbURL)
 	defer db.Close()
 
-	port := ":" + os.Getenv("PORT")
+	portEnv := os.Getenv("PORT")
+	if portEnv == "" {
+		portEnv = "8000"
+	}
+	port := ":" + portEnv
 
 	app := &App{DB: db}
 	router := api.NewRouter(app.DB)

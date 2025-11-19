@@ -34,15 +34,24 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tokenString, err := utils.CreateToken(user.UserID)
+	accessToken, err := utils.CreateAccessToken(user.UserID)
 	if err != nil {
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		http.Error(w, "Error generating access token", http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, err := utils.CreateRefreshToken(user.UserID)
+	if err != nil {
+		http.Error(w, "Error generating refresh token", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+	json.NewEncoder(w).Encode(map[string]string{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
 }
 
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) {
@@ -53,8 +62,9 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if user.Mail == "" && user.Password == "" && user.Name == "" {
+	if user.Mail == "" || user.Password == "" || user.Name == "" {
 		http.Error(w, "Missing fields", http.StatusBadRequest)
+		return
 	}
 
 	user.Password = utils.HashPassword(user.Password)
@@ -69,4 +79,48 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
+}
+
+func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
+	var refreshReq struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	err := json.NewDecoder(req.Body).Decode(&refreshReq)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := utils.ParseRefreshToken(refreshReq.RefreshToken)
+	if err != nil {
+		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	newAccessToken, err := utils.CreateAccessToken(userID)
+	if err != nil {
+		http.Error(w, "Error generating access token", http.StatusInternalServerError)
+		return
+	}
+
+	newRefreshToken, err := utils.CreateRefreshToken(userID)
+	if err != nil {
+		http.Error(w, "Error generating refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"access_token":  newAccessToken,
+		"refresh_token": newRefreshToken,
+	})
+}
+
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, req *http.Request) {
+	// Client-side'da token'ı silmesi yeterli, server-side'da whitelist/blacklist kullanılmıyorsa
+	// sadece başarılı yanıt dönebiliriz
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
 }
