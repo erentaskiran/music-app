@@ -23,3 +23,16 @@ func (r *Repository) CheckLogin(mail, password string) (*models.User, error) {
 
 	return &user, nil
 }
+
+func (r *Repository) GetUserByID(userID int) (*models.User, error) {
+	query := "SELECT user_id, name, mail FROM users WHERE user_id=$1"
+	row := r.Db.QueryRow(query, userID)
+
+	var user models.User
+	err := row.Scan(&user.UserID, &user.Name, &user.Mail)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
