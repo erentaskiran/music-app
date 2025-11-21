@@ -1,0 +1,39 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.x'
+        cache-dependency-path: backend/go.sum
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run Vet
+      run: go vet ./...
+
+    - name: Run Build
+      run: go build -v ./...
+
+    # - name: Run Tests
+    #   run: go test -v ./...
