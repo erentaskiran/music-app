@@ -2,7 +2,6 @@ package auth
 
 import (
 	"database/sql"
-	"encoding/json"
 	"music-app/backend/internal/models"
 	repository "music-app/backend/internal/repository"
 	utils "music-app/backend/internal/utils"
@@ -22,11 +21,20 @@ func NewAuthHandler(db *sql.DB, jwtManager *utils.JWTManager) *AuthHandler {
 	}
 }
 
+// LoginHandler godoc
+// @Summary User Login
+// @Description Authenticates a user and returns access and refresh tokens
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   loginReq body models.LoginRequest true "Login Credentials"
+// @Success 200 {object} models.LoginResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Router /api/login [post]
 func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 	var loginReq models.LoginRequest
-	err := json.NewDecoder(req.Body).Decode(&loginReq)
-	if err != nil {
-		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
+	if utils.DecodeJSONBody(w, req, &loginReq) != nil {
 		return
 	}
 
@@ -49,19 +57,26 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	})
+	utils.JSONSuccess(w, models.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, http.StatusOK)
 }
 
+// RegisterHandler godoc
+// @Summary Register User
+// @Description Registers a new user
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   registerReq body models.RegisterRequest true "User Registration"
+// @Success 201 {object} models.RegisterRequest
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/register [post]
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) {
 	var user models.RegisterRequest
-	err := json.NewDecoder(req.Body).Decode(&user)
-	if err != nil {
-		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
+	if utils.DecodeJSONBody(w, req, &user) != nil {
 		return
 	}
 
@@ -73,24 +88,31 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	user.Password = utils.HashPassword(user.Password)
 
 	repo := repository.NewRepository(h.Db)
-	err = repo.CreateUser(&user)
+	err := repo.CreateUser(&user)
 	if err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	utils.JSONSuccess(w, user, http.StatusCreated)
 }
 
+// RefreshHandler godoc
+// @Summary Refresh Token
+// @Description Refreshes the access token using a valid refresh token
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   refreshReq body map[string]string true "Refresh Token"
+// @Success 200 {object} models.LoginResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Router /api/refresh [post]
 func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 	var refreshReq struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-	err := json.NewDecoder(req.Body).Decode(&refreshReq)
-	if err != nil {
-		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
+	if utils.DecodeJSONBody(w, req, &refreshReq) != nil {
 		return
 	}
 
@@ -112,16 +134,22 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"access_token":  newAccessToken,
-		"refresh_token": newRefreshToken,
-	})
+	utils.JSONSuccess(w, models.LoginResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+	}, http.StatusOK)
 }
 
+// LogoutHandler godoc
+// @Summary Logout
+// @Description Logs out the user
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} models.LogoutResponse
+// @Router /api/logout [post]
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+	utils.JSONSuccess(w, models.LogoutResponse{
+		Message: "Logged out successfully",
+	}, http.StatusOK)
 }

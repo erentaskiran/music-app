@@ -1,0 +1,205 @@
+basePath: /
+definitions:
+  models.LoginRequest:
+    properties:
+      mail:
+        type: string
+      password:
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  models.LogoutResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      mail:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.UserProfileResponse:
+    properties:
+      mail:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error_code:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+  description: This is the backend API for the Music App.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Music App API
+  version: "1.0"
+paths:
+  /api/health:
+    get:
+      description: Checks if the server is running
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health Check
+      tags:
+      - Public
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh tokens
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: loginReq
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: User Login
+      tags:
+      - Auth
+  /api/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logs out the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LogoutResponse'
+      summary: Logout
+      tags:
+      - Auth
+  /api/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Current User
+      tags:
+      - Protected
+  /api/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes the access token using a valid refresh token
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: refreshReq
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Refresh Token
+      tags:
+      - Auth
+  /api/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user
+      parameters:
+      - description: User Registration
+        in: body
+        name: registerReq
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.RegisterRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register User
+      tags:
+      - Auth
+swagger: "2.0"

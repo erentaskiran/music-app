@@ -2,9 +2,9 @@ package api
 
 import (
 	"database/sql"
-	"encoding/json"
 	"music-app/backend/internal/api/auth"
 	"music-app/backend/internal/middleware"
+	"music-app/backend/internal/models"
 	"music-app/backend/internal/repository"
 	"music-app/backend/internal/utils"
 	"music-app/backend/pkg/api_errors"
@@ -12,6 +12,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Router struct {
@@ -36,6 +37,9 @@ func (r *Router) NewRouter() *mux.Router {
 	// CORS middleware
 	router.Use(middleware.CORS)
 
+	// Swagger
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
 	// Public routes
 	router.HandleFunc("/api/health", r.HealthCheckHandler).Methods(http.MethodGet)
 	router.HandleFunc("/api/register", h.RegisterHandler).Methods(http.MethodPost, http.MethodOptions)
@@ -51,11 +55,28 @@ func (r *Router) NewRouter() *mux.Router {
 	return router
 }
 
+// HealthCheckHandler godoc
+// @Summary Health Check
+// @Description Checks if the server is running
+// @Tags Public
+// @Success 200 {string} string "OK"
+// @Router /api/health [get]
 func (r *Router) HealthCheckHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
 
+// MeHandler godoc
+// @Summary Get Current User
+// @Description Retrieves the profile of the currently authenticated user
+// @Tags Protected
+// @Accept  json
+// @Produce  json
+// @Security ApiKeyAuth
+// @Success 200 {object} models.UserProfileResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Router /api/me [get]
 func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 	userID, ok := middleware.GetUserID(req.Context())
 	if !ok {
@@ -68,10 +89,9 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 		utils.JSONError(w, api_errors.ErrUserNotFound, "user not found", http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"user_id": u.UserID,
-		"name":    u.Name,
-		"mail":    u.Mail,
-	})
+	utils.JSONSuccess(w, models.UserProfileResponse{
+		UserID: u.UserID,
+		Name:   u.Name,
+		Mail:   u.Mail,
+	}, http.StatusOK)
 }
