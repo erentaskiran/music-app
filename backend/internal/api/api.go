@@ -37,11 +37,11 @@ func (r *Router) NewRouter() *mux.Router {
 	router.Use(middleware.CORS)
 
 	// Public routes
-	router.HandleFunc("/health", r.HealthCheckHandler).Methods(http.MethodGet)
-	router.HandleFunc("/register", h.RegisterHandler).Methods(http.MethodPost, http.MethodOptions)
-	router.HandleFunc("/login", h.LoginHandler).Methods(http.MethodPost, http.MethodOptions)
-	router.HandleFunc("/refresh", h.RefreshHandler).Methods(http.MethodPost, http.MethodOptions)
-	router.HandleFunc("/logout", h.LogoutHandler).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/health", r.HealthCheckHandler).Methods(http.MethodGet)
+	router.HandleFunc("/api/register", h.RegisterHandler).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/login", h.LoginHandler).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/refresh", h.RefreshHandler).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/logout", h.LogoutHandler).Methods(http.MethodPost, http.MethodOptions)
 
 	// Protected routes
 	protected := router.PathPrefix("/api").Subrouter()
