@@ -6,16 +6,19 @@ import (
 	"music-app/backend/internal/models"
 	repository "music-app/backend/internal/repository"
 	utils "music-app/backend/internal/utils"
+	"music-app/backend/pkg/api_errors"
 	"net/http"
 )
 
 type AuthHandler struct {
 	Db *sql.DB
+	JWTManager *utils.JWTManager
 }
 
-func NewAuthHandler(db *sql.DB) *AuthHandler {
+func NewAuthHandler(db *sql.DB, jwtManager *utils.JWTManager) *AuthHandler {
 	return &AuthHandler{
 		Db: db,
+		JWTManager: jwtManager,
 	}
 }
 
@@ -23,26 +26,26 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 	var loginReq models.LoginRequest
 	err := json.NewDecoder(req.Body).Decode(&loginReq)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	repo := repository.NewRepository(h.Db)
 	user, err := repo.CheckLogin(loginReq.Mail, loginReq.Password)
 	if err != nil || user == nil {
-		http.Error(w, "Invalid email or password"+err.Error(), http.StatusUnauthorized)
+		utils.JSONError(w, api_errors.ErrInvalidCredentials, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	accessToken, err := utils.CreateAccessToken(user.UserID)
+	accessToken, err := h.JWTManager.CreateAccessToken(user.UserID)
 	if err != nil {
-		http.Error(w, "Error generating access token", http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating access token", http.StatusInternalServerError)
 		return
 	}
 
-	refreshToken, err := utils.CreateRefreshToken(user.UserID)
+	refreshToken, err := h.JWTManager.CreateRefreshToken(user.UserID)
 	if err != nil {
-		http.Error(w, "Error generating refresh token", http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating refresh token", http.StatusInternalServerError)
 		return
 	}
 
@@ -58,12 +61,12 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	var user models.RegisterRequest
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	if user.Mail == "" || user.Password == "" || user.Name == "" {
-		http.Error(w, "Missing fields", http.StatusBadRequest)
+		utils.JSONError(w, api_errors.ErrMissingFields, "Missing fields", http.StatusBadRequest)
 		return
 	}
 
@@ -72,7 +75,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	repo := repository.NewRepository(h.Db)
 	err = repo.CreateUser(&user)
 	if err != nil {
-		http.Error(w, "Error creating user"+err.Error(), http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error creating user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -87,25 +90,25 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&refreshReq)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.JSONError(w, api_errors.ErrBadRequest, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	userID, err := utils.ParseRefreshToken(refreshReq.RefreshToken)
+	userID, err := h.JWTManager.ParseRefreshToken(refreshReq.RefreshToken)
 	if err != nil {
-		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+		utils.JSONError(w, api_errors.ErrInvalidToken, "Invalid refresh token", http.StatusUnauthorized)
 		return
 	}
 
-	newAccessToken, err := utils.CreateAccessToken(userID)
+	newAccessToken, err := h.JWTManager.CreateAccessToken(userID)
 	if err != nil {
-		http.Error(w, "Error generating access token", http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating access token", http.StatusInternalServerError)
 		return
 	}
 
-	newRefreshToken, err := utils.CreateRefreshToken(userID)
+	newRefreshToken, err := h.JWTManager.CreateRefreshToken(userID)
 	if err != nil {
-		http.Error(w, "Error generating refresh token", http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating refresh token", http.StatusInternalServerError)
 		return
 	}
 
@@ -118,8 +121,6 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, req *http.Request) {
-	// Client-side'da token'ı silmesi yeterli, server-side'da whitelist/blacklist kullanılmıyorsa
-	// sadece başarılı yanıt dönebiliriz
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})

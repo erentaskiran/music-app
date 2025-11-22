@@ -1,47 +1,42 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"log/slog"
 	"music-app/backend/internal/api"
+	"music-app/backend/internal/utils"
+	"music-app/backend/pkg/config"
 	"music-app/backend/pkg/db"
+	"music-app/backend/pkg/logger"
 	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-type App struct {
-	DB *sql.DB
-}
-
 func main() {
+	logger.Init()
+
 	_ = godotenv.Load()
-	DbURL := os.Getenv("DATABASE_URL")
-	if DbURL == "" {
-		fmt.Println("DATABASE_URL not set")
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("Failed to load configuration", "error", err)
 		os.Exit(1)
 	}
 
-	db := db.InitDB(DbURL)
+	db := db.InitDB(cfg.DatabaseURL)
 	defer db.Close()
 
-	portEnv := os.Getenv("PORT")
-	if portEnv == "" {
-		portEnv = "8000"
-	}
-	port := ":" + portEnv
+	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.AccessTokenExp, cfg.RefreshTokenExp)
 
-	app := &App{DB: db}
-	router := api.NewRouter(app.DB)
+	router := api.NewRouter(db, jwtManager, cfg)
 
 	r := router.NewRouter()
 
-	fmt.Println("Server is running on port", port)
+	slog.Info("Server is running", "port", cfg.Port)
 
-	err := http.ListenAndServe(port, r)
+	err = http.ListenAndServe(":"+cfg.Port, r)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("Server failed to start", "error", err)
 		os.Exit(1)
 	}
 }

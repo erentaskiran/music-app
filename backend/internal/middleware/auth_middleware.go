@@ -7,7 +7,15 @@ import (
 	utils "music-app/backend/internal/utils"
 )
 
-func Authenticated(next http.Handler) http.Handler {
+type AuthMiddleware struct {
+	JWTManager *utils.JWTManager
+}
+
+func NewAuthMiddleware(jwtManager *utils.JWTManager) *AuthMiddleware {
+	return &AuthMiddleware{JWTManager: jwtManager}
+}
+
+func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := r.Header.Get("Authorization")
 		if h == "" || !strings.HasPrefix(h, "Bearer ") {
@@ -15,7 +23,7 @@ func Authenticated(next http.Handler) http.Handler {
 			return
 		}
 		tokenString := strings.TrimPrefix(h, "Bearer ")
-		claims, err := utils.ParseAccessToken(tokenString)
+		claims, err := m.JWTManager.ParseAccessToken(tokenString)
 		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
