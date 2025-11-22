@@ -75,7 +75,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	repo := repository.NewRepository(h.Db)
 	err = repo.CreateUser(&user)
 	if err != nil {
-		utils.JSONError(w, api_errors.ErrInternalServer, "Error creating user: "+err.Error(), http.StatusInternalServerError)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 

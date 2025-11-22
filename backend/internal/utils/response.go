@@ -12,18 +12,26 @@ type ErrorResponse struct {
 }
 
 func JSONError(w http.ResponseWriter, code string, message string, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	
 	if status >= 500 {
 		slog.Error("Internal Server Error", "code", code, "message", message)
 	}
 
-	err := json.NewEncoder(w).Encode(ErrorResponse{
+	response := ErrorResponse{
 		ErrorCode: code,
 		Message:   message,
-	})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	body, err := json.Marshal(response)
 	if err != nil {
+		slog.Error("Failed to marshal error response", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(status)
+	if _, err := w.Write(body); err != nil {
 		slog.Error("Failed to write error response", "error", err)
 	}
 }
