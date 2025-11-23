@@ -90,8 +90,10 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	utils.JSONSuccess(w, models.UserProfileResponse{
-		UserID: u.UserID,
-		Name:   u.Name,
-		Mail:   u.Mail,
+		ID:        u.ID,
+		Username:  u.Username,
+		Email:     u.Email,
+		Role:      u.Role,
+		AvatarURL: u.AvatarURL,
 	}, http.StatusOK)
 }

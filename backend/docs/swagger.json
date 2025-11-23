@@ -243,7 +243,7 @@
         "models.LoginRequest": {
             "type": "object",
             "properties": {
-                "mail": {
+                "email": {
                     "type": "string"
                 },
                 "password": {
@@ -273,31 +273,34 @@
         "models.RegisterRequest": {
             "type": "object",
             "properties": {
-                "mail": {
-                    "type": "string"
-                },
-                "name": {
+                "email": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
                 },
-                "user_id": {
-                    "type": "integer"
+                "username": {
+                    "type": "string"
                 }
             }
         },
         "models.UserProfileResponse": {
             "type": "object",
             "properties": {
-                "mail": {
+                "avatar_url": {
                     "type": "string"
                 },
-                "name": {
+                "email": {
                     "type": "string"
                 },
-                "user_id": {
+                "id": {
                     "type": "integer"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
