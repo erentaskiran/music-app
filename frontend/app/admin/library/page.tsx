@@ -108,8 +108,9 @@ export default function MusicLibraryPage() {
     toast.success("Track deleted successfully")
   }
 
-  const handleEdit = () => {
-    toast.info("Edit functionality coming soon")
+  const handleEdit = (id: string) => {
+    // TODO: Implement edit functionality
+    toast.info(`Edit functionality coming soon for track ${id}`)
   }
 
   const formatDate = (dateString: string) => {
