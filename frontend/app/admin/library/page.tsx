@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Music, MoreVertical, Pencil, Trash2, Search } from "lucide-react"
+import { Music, Pencil, Trash2, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -108,7 +108,7 @@ export default function MusicLibraryPage() {
     toast.success("Track deleted successfully")
   }
 
-  const handleEdit = (id: string) => {
+  const handleEdit = () => {
     toast.info("Edit functionality coming soon")
   }
 

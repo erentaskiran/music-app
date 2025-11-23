@@ -52,7 +52,7 @@ export default function DashboardPage() {
       try {
         // This will automatically refresh the token if needed
         await makeAuthenticatedRequest('/me', { method: 'GET' })
-      } catch (error) {
+      } catch {
         // If auth fails, user will be redirected by the error handler
         console.log('Auth check completed')
       }
