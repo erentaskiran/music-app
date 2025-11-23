@@ -19,47 +19,55 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { toast } from "sonner"
-import { login } from "@/lib/api"
+import { register } from "@/lib/api"
 import Link from "next/link"
 
-const loginSchema = z.object({
+const registerSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "Please confirm your password" }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 })
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type RegisterFormValues = z.infer<typeof registerSchema>
 
-export default function AdminLogin() {
+export default function AdminRegister() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
+      username: "",
       password: "",
+      confirmPassword: "",
     },
   })
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true)
     
     try {
-      // Call the login API with credentials
-      await login({
+      // Call the register API with credentials
+      await register({
         email: data.email,
+        username: data.username,
         password: data.password,
       })
       
       // Show success message
-      toast.success("Login successful!")
+      toast.success("Registration successful! Please log in.")
       
-      // Redirect to dashboard
-      router.push("/admin/dashboard")
+      // Redirect to login page
+      router.push("/admin/login")
     } catch (error) {
       // Show error message
-      toast.error(error instanceof Error ? error.message : "Invalid credentials. Please try again.")
-      console.error("Login error:", error)
+      toast.error(error instanceof Error ? error.message : "Registration failed. Please try again.")
+      console.error("Registration error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +82,7 @@ export default function AdminLogin() {
         className="w-full max-w-md"
       >
         <div className="flex items-center justify-center mb-8 gap-3">
-          <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
+          <div className="bg-linear-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
             <Music2 className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white">Musicly</h1>
@@ -82,9 +90,9 @@ export default function AdminLogin() {
 
         <Card className="border-gray-800 bg-[#0a0a0a] shadow-2xl">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-white">Admin Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-white">Create Account</CardTitle>
             <CardDescription className="text-gray-400">
-              Enter your credentials to access the admin panel
+              Enter your details to create a new admin account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -100,6 +108,24 @@ export default function AdminLogin() {
                         <Input
                           placeholder="admin@musicly.com"
                           type="email"
+                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200">Username</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="admin"
+                          type="text"
                           className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
                           {...field}
                         />
@@ -126,21 +152,39 @@ export default function AdminLogin() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200">Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="••••••••"
+                          type="password"
+                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                  className="w-full bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
             </Form>
             
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-400">
-                Don't have an account?{" "}
-                <Link href="/admin/register" className="text-purple-500 hover:text-purple-400 font-medium">
-                  Create one
+                Already have an account?{" "}
+                <Link href="/admin/login" className="text-purple-500 hover:text-purple-400 font-medium">
+                  Sign in
                 </Link>
               </p>
             </div>

@@ -2,7 +2,7 @@
 
 import { ReactNode, useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Music2,
@@ -12,10 +12,13 @@ import {
   Settings,
   Menu,
   X,
+  LogOut,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { logout } from "@/lib/api"
+import { toast } from "sonner"
 
 const navItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -27,6 +30,18 @@ const navItems = [
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast.success("Logged out successfully")
+      router.push("/admin/login")
+    } catch (error) {
+      toast.error("Logout failed")
+      console.error("Logout error:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0c0c0d] text-white font-inter">
@@ -91,9 +106,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
               {/* User Section */}
               <div className="pt-4 border-t border-gray-800">
-                <div className="flex items-center gap-3 px-4 py-3">
+                <div className="flex items-center gap-3 px-4 py-3 mb-2">
                   <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                    <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white">
                       A
                     </AvatarFallback>
                   </Avatar>
@@ -102,6 +117,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     <p className="text-xs text-gray-400">admin@musicly.com</p>
                   </div>
                 </div>
+                
+                {/* Logout Button */}
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/50"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Logout</span>
+                </Button>
               </div>
             </div>
           </motion.aside>
