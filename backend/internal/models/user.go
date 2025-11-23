@@ -1,21 +1,26 @@
 package models
 
+import "time"
+
 type User struct {
-	UserID   int    `json:"user_id"`
-	Name     string `json:"name"`
-	Mail     string `json:"mail"`
-	Password string `json:"password"`
+	ID           int       `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"password_hash"`
+	Username     string    `json:"username"`
+	AvatarURL    *string   `json:"avatar_url,omitempty"`
+	Role         string    `json:"role"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type LoginRequest struct {
-	Mail     string `json:"mail"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 type RegisterRequest struct {
-	UserID   int    `json:"user_id"`
-	Name     string `json:"name"`
-	Mail     string `json:"mail"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -29,9 +34,11 @@ type RefreshResponse struct {
 }
 
 type UserProfileResponse struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-	Mail   string `json:"mail"`
+	ID        int     `json:"id"`
+	Email     string  `json:"email"`
+	Username  string  `json:"username"`
+	AvatarURL *string `json:"avatar_url,omitempty"`
+	Role      string  `json:"role"`
 }
 
 type LogoutResponse struct {

@@ -2,7 +2,7 @@ basePath: /
 definitions:
   models.LoginRequest:
     properties:
-      mail:
+      email:
         type: string
       password:
         type: string
@@ -21,23 +21,25 @@ definitions:
     type: object
   models.RegisterRequest:
     properties:
-      mail:
-        type: string
-      name:
+      email:
         type: string
       password:
         type: string
-      user_id:
-        type: integer
+      username:
+        type: string
     type: object
   models.UserProfileResponse:
     properties:
-      mail:
+      avatar_url:
         type: string
-      name:
+      email:
         type: string
-      user_id:
+      id:
         type: integer
+      role:
+        type: string
+      username:
+        type: string
     type: object
   utils.ErrorResponse:
     properties:

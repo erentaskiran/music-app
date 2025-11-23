@@ -10,13 +10,13 @@ import (
 )
 
 type AuthHandler struct {
-	Db *sql.DB
+	Db         *sql.DB
 	JWTManager *utils.JWTManager
 }
 
 func NewAuthHandler(db *sql.DB, jwtManager *utils.JWTManager) *AuthHandler {
 	return &AuthHandler{
-		Db: db,
+		Db:         db,
 		JWTManager: jwtManager,
 	}
 }
@@ -39,19 +39,19 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	repo := repository.NewRepository(h.Db)
-	user, err := repo.CheckLogin(loginReq.Mail, loginReq.Password)
+	user, err := repo.CheckLogin(loginReq.Email, loginReq.Password)
 	if err != nil || user == nil {
 		utils.JSONError(w, api_errors.ErrInvalidCredentials, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	accessToken, err := h.JWTManager.CreateAccessToken(user.UserID)
+	accessToken, err := h.JWTManager.CreateAccessToken(user.ID)
 	if err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating access token", http.StatusInternalServerError)
 		return
 	}
 
-	refreshToken, err := h.JWTManager.CreateRefreshToken(user.UserID)
+	refreshToken, err := h.JWTManager.CreateRefreshToken(user.ID)
 	if err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating refresh token", http.StatusInternalServerError)
 		return
@@ -80,7 +80,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if user.Mail == "" || user.Password == "" || user.Name == "" {
+	if user.Email == "" || user.Password == "" || user.Username == "" {
 		utils.JSONError(w, api_errors.ErrMissingFields, "Missing fields", http.StatusBadRequest)
 		return
 	}
