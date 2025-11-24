@@ -65,7 +65,7 @@ func (m *MinioClient) UploadFile(ctx context.Context, fileReader interface{}, fi
 		ContentType: contentType,
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to upload object to MinIO bucket %s: %w", m.BucketName, err)
 	}
 
 	// Construct URL

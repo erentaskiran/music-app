@@ -2,7 +2,7 @@ package api
 
 import (
 	"database/sql"
-	"fmt"
+	"log/slog"
 	"music-app/backend/internal/api/auth"
 	"music-app/backend/internal/middleware"
 	"music-app/backend/internal/models"
@@ -12,9 +12,19 @@ import (
 	"music-app/backend/pkg/config"
 	"music-app/backend/pkg/storage"
 	"net/http"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+var (
+	// ValidAudioTypes defines the allowed content types for audio file uploads
+	ValidAudioTypes = []string{"audio/mpeg", "audio/mp3", "audio/wav", "audio/flac"}
+	// MaxUploadSize defines the maximum file size for uploads (10MB)
+	MaxUploadSize int64 = 10 << 20
 )
 
 type Router struct {
@@ -105,12 +115,12 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 
 // CreateTrackHandler godoc
 // @Summary Create a new track
-// @Description Creates a new track by uploading a file and saving details
+// @Description Creates a new track by uploading a file and saving details. Maximum file size: 10MB.
 // @Tags Protected
 // @Accept multipart/form-data
 // @Produce json
 // @Security ApiKeyAuth
-// @Param file formData file true "Track file (MP3)"
+// @Param file formData file true "Track file (MP3, WAV, FLAC - Max 10MB)"
 // @Param title formData string true "Track Title"
 // @Param duration formData int false "Duration in seconds"
 // @Param cover_image_url formData string false "Cover Image URL"
@@ -120,8 +130,8 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /api/tracks [post]
 func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
-	// Parse multipart form (10MB limit)
-	if err := req.ParseMultipartForm(10 << 20); err != nil {
+	// Parse multipart form with size limit
+	if err := req.ParseMultipartForm(MaxUploadSize); err != nil {
 		utils.JSONError(w, api_errors.ErrBadRequest, "failed to parse form", http.StatusBadRequest)
 		return
 	}
@@ -142,9 +152,8 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 
 	// Validate content type
 	contentType := header.Header.Get("Content-Type")
-	validTypes := []string{"audio/mpeg", "audio/mp3", "audio/wav", "audio/flac"}
 	isValid := false
-	for _, vt := range validTypes {
+	for _, vt := range ValidAudioTypes {
 		if contentType == vt {
 			isValid = true
 			break
@@ -155,9 +164,18 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Sanitize filename to prevent path traversal
+	sanitizedFilename := sanitizeFilename(header.Filename)
+
 	// Upload to MinIO
-	fileURL, err := r.Storage.UploadFile(req.Context(), file, header.Size, header.Header.Get("Content-Type"), header.Filename)
+	fileURL, err := r.Storage.UploadFile(req.Context(), file, header.Size, header.Header.Get("Content-Type"), sanitizedFilename)
 	if err != nil {
+		slog.Error("Failed to upload file to MinIO",
+			"error", err,
+			"user_id", userID,
+			"filename", sanitizedFilename,
+			"size", header.Size,
+			"content_type", contentType)
 		utils.JSONError(w, api_errors.ErrInternalServer, "failed to upload file", http.StatusInternalServerError)
 		return
 	}
@@ -172,7 +190,9 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 	// Parse optional fields
 	duration := 0
 	if d := req.FormValue("duration"); d != "" {
-		fmt.Sscanf(d, "%d", &duration)
+		if parsedDuration, err := strconv.Atoi(d); err == nil {
+			duration = parsedDuration
+		}
 	}
 
 	track := &models.Track{
@@ -191,4 +211,14 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	utils.JSONSuccess(w, track, http.StatusCreated)
+}
+
+// sanitizeFilename removes path separators and problematic characters from filenames
+func sanitizeFilename(filename string) string {
+	// Get just the base filename, removing any directory paths
+	filename = filepath.Base(filename)
+	// Replace path separators with underscores as extra safety
+	filename = strings.ReplaceAll(filename, "/", "_")
+	filename = strings.ReplaceAll(filename, "\\", "_")
+	return filename
 }
