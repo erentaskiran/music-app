@@ -24,7 +24,30 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
     const response = await fetch(fullUrl, config)
 
     if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
+        // Try to get error message from response
+        let errorMessage = 'An error occurred. Please try again.'
+        
+        try {
+            const errorData = await response.json()
+            errorMessage = errorData.message || errorData.error || errorMessage
+        } catch {
+            // If response is not JSON, use status-based messages
+            if (response.status === 400) {
+                errorMessage = 'Invalid request. Please check your input.'
+            } else if (response.status === 401) {
+                errorMessage = 'Invalid credentials. Please try again.'
+            } else if (response.status === 403) {
+                errorMessage = 'You do not have permission to perform this action.'
+            } else if (response.status === 404) {
+                errorMessage = 'The requested resource was not found.'
+            } else if (response.status === 409) {
+                errorMessage = 'This resource already exists.'
+            } else if (response.status >= 500) {
+                errorMessage = 'Server error. Please try again later.'
+            }
+        }
+        
+        throw new Error(errorMessage)
     }
 
     return response.json()
@@ -118,14 +141,38 @@ export async function makeAuthenticatedRequest(url: string, options: RequestOpti
             )
 
             if (!retryResponse.ok) {
-                throw new Error(`Request failed with status ${retryResponse.status}`)
+                // Get user-friendly error message
+                let errorMessage = 'An error occurred. Please try again.'
+                try {
+                    const errorData = await retryResponse.json()
+                    errorMessage = errorData.message || errorData.error || errorMessage
+                } catch {
+                    if (retryResponse.status === 403) {
+                        errorMessage = 'You do not have permission to access this resource.'
+                    } else if (retryResponse.status >= 500) {
+                        errorMessage = 'Server error. Please try again later.'
+                    }
+                }
+                throw new Error(errorMessage)
             }
 
             return retryResponse.json()
         }
 
         if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`)
+            // Get user-friendly error message
+            let errorMessage = 'An error occurred. Please try again.'
+            try {
+                const errorData = await response.json()
+                errorMessage = errorData.message || errorData.error || errorMessage
+            } catch {
+                if (response.status === 403) {
+                    errorMessage = 'You do not have permission to access this resource.'
+                } else if (response.status >= 500) {
+                    errorMessage = 'Server error. Please try again later.'
+                }
+            }
+            throw new Error(errorMessage)
         }
 
         return response.json()

@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { withAuth } from "@/lib/auth"
 
-export default function MusicUploadPage() {
+function MusicUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [musicTitle, setMusicTitle] = useState("")
   const [isDragging, setIsDragging] = useState(false)
@@ -278,3 +279,5 @@ export default function MusicUploadPage() {
     </div>
   )
 }
+
+export default withAuth(MusicUploadPage)

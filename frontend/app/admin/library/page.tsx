@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Music, Pencil, Trash2, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { withAuth } from "@/lib/auth"
 import {
   Table,
   TableBody,
@@ -93,7 +94,7 @@ const initialTracks: MusicTrack[] = [
   },
 ]
 
-export default function MusicLibraryPage() {
+function MusicLibraryPage() {
   const [tracks, setTracks] = useState<MusicTrack[]>(initialTracks)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -328,3 +329,5 @@ export default function MusicLibraryPage() {
     </div>
   )
 }
+
+export default withAuth(MusicLibraryPage)
