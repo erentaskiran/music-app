@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { withAuth } from "@/lib/auth"
+import { makeAuthenticatedRequest } from "@/lib/api"
 
 function MusicUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [musicTitle, setMusicTitle] = useState("")
+  const [genre, setGenre] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -82,25 +84,39 @@ function MusicUploadPage() {
 
     setIsUploading(true)
     
-    // Simulate upload process
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    
-    setIsUploading(false)
-    setUploadSuccess(true)
-    
-    toast.success("Music uploaded successfully!", {
-      description: `"${musicTitle}" has been added to your library`,
-    })
+    try {
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+      formData.append("title", musicTitle)
+      formData.append("genre", genre)
 
-    // Reset form after 2 seconds
-    setTimeout(() => {
-      setSelectedFile(null)
-      setMusicTitle("")
-      setUploadSuccess(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-    }, 2000)
+      await makeAuthenticatedRequest("/tracks/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      setIsUploading(false)
+      setUploadSuccess(true)
+      
+      toast.success("Music uploaded successfully!", {
+        description: `"${musicTitle}" has been added to your library`,
+      })
+
+      // Reset form after 2 seconds
+      setTimeout(() => {
+        setSelectedFile(null)
+        setMusicTitle("")
+        setGenre("")
+        setUploadSuccess(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      }, 2000)
+    } catch (error) {
+      console.error(error)
+      setIsUploading(false)
+      toast.error("Failed to upload music")
+    }
   }
 
   return (
@@ -206,12 +222,14 @@ function MusicUploadPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="artist" className="text-gray-200">
-                  Artist Name (Optional)
+                <Label htmlFor="genre" className="text-gray-200">
+                  Genre (Optional)
                 </Label>
                 <Input
-                  id="artist"
-                  placeholder="Enter artist name"
+                  id="genre"
+                  placeholder="Enter genre (e.g. Pop, Rock)"
+                  value={genre}
+                  onChange={(e) => setGenre(e.target.value)}
                   className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
                 />
               </div>

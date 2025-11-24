@@ -7,6 +7,7 @@ import (
 	"music-app/backend/pkg/config"
 	"music-app/backend/pkg/db"
 	"music-app/backend/pkg/logger"
+	"music-app/backend/pkg/storage"
 	"net/http"
 	"os"
 
@@ -43,7 +44,13 @@ func main() {
 
 	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.AccessTokenExp, cfg.RefreshTokenExp)
 
-	router := api.NewRouter(db, jwtManager, cfg)
+	minioClient, err := storage.NewMinioClient(cfg)
+	if err != nil {
+		slog.Error("Failed to initialize MinIO client", "error", err)
+		os.Exit(1)
+	}
+
+	router := api.NewRouter(db, jwtManager, cfg, minioClient)
 
 	r := router.NewRouter()
 
