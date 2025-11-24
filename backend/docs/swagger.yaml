@@ -28,6 +28,33 @@ definitions:
       username:
         type: string
     type: object
+  models.Track:
+    properties:
+      artist_id:
+        type: integer
+      cover_image_url:
+        type: string
+      created_at:
+        type: string
+      duration:
+        type: integer
+      file_url:
+        type: string
+      genre:
+        type: string
+      id:
+        type: integer
+      lyrics:
+        type: string
+      quality_bitrate:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.UserProfileResponse:
     properties:
       avatar_url:
@@ -204,4 +231,52 @@ paths:
       summary: Register User
       tags:
       - Auth
+  /api/tracks:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creates a new track by uploading a file and saving details
+      parameters:
+      - description: Track file (MP3)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Track Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Duration in seconds
+        in: formData
+        name: duration
+        type: integer
+      - description: Cover Image URL
+        in: formData
+        name: cover_image_url
+        type: string
+      - description: Genre
+        in: formData
+        name: genre
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Track'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new track
+      tags:
+      - Protected
 swagger: "2.0"
