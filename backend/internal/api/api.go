@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"log/slog"
 	"music-app/backend/internal/api/auth"
 	"music-app/backend/internal/middleware"
 	"music-app/backend/internal/models"
@@ -9,23 +10,36 @@ import (
 	"music-app/backend/internal/utils"
 	"music-app/backend/pkg/api_errors"
 	"music-app/backend/pkg/config"
+	"music-app/backend/pkg/storage"
 	"net/http"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+var (
+	// ValidAudioTypes defines the allowed content types for audio file uploads
+	ValidAudioTypes = []string{"audio/mpeg", "audio/mp3", "audio/wav", "audio/flac"}
+	// MaxUploadSize defines the maximum file size for uploads (10MB)
+	MaxUploadSize int64 = 10 << 20
 )
 
 type Router struct {
 	Db         *sql.DB
 	JWTManager *utils.JWTManager
 	Config     *config.Config
+	Storage    *storage.MinioClient
 }
 
-func NewRouter(db *sql.DB, jwtManager *utils.JWTManager, cfg *config.Config) *Router {
+func NewRouter(db *sql.DB, jwtManager *utils.JWTManager, cfg *config.Config, storage *storage.MinioClient) *Router {
 	return &Router{
 		Db:         db,
 		JWTManager: jwtManager,
 		Config:     cfg,
+		Storage:    storage,
 	}
 }
 
@@ -50,6 +64,7 @@ func (r *Router) NewRouter() *mux.Router {
 	// Protected routes
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.HandleFunc("/me", r.MeHandler).Methods(http.MethodGet, http.MethodOptions)
+	protected.HandleFunc("/tracks/upload", r.CreateTrackHandler).Methods(http.MethodPost, http.MethodOptions)
 	protected.Use(authMiddleware.Authenticated)
 
 	return router
@@ -96,4 +111,114 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 		Role:      u.Role,
 		AvatarURL: u.AvatarURL,
 	}, http.StatusOK)
+}
+
+// CreateTrackHandler godoc
+// @Summary Create a new track
+// @Description Creates a new track by uploading a file and saving details. Maximum file size: 10MB.
+// @Tags Protected
+// @Accept multipart/form-data
+// @Produce json
+// @Security ApiKeyAuth
+// @Param file formData file true "Track file (MP3, WAV, FLAC - Max 10MB)"
+// @Param title formData string true "Track Title"
+// @Param duration formData int false "Duration in seconds"
+// @Param cover_image_url formData string false "Cover Image URL"
+// @Param genre formData string false "Genre"
+// @Success 201 {object} models.Track
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/tracks [post]
+func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
+	// Parse multipart form with size limit
+	if err := req.ParseMultipartForm(MaxUploadSize); err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Get file
+	file, header, err := req.FormFile("file")
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "file is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Validate content type
+	contentType := header.Header.Get("Content-Type")
+	isValid := false
+	for _, vt := range ValidAudioTypes {
+		if contentType == vt {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid file type, only audio files are allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Sanitize filename to prevent path traversal
+	sanitizedFilename := sanitizeFilename(header.Filename)
+
+	// Upload to MinIO
+	fileURL, err := r.Storage.UploadFile(req.Context(), file, header.Size, header.Header.Get("Content-Type"), sanitizedFilename)
+	if err != nil {
+		slog.Error("Failed to upload file to MinIO",
+			"error", err,
+			"user_id", userID,
+			"filename", sanitizedFilename,
+			"size", header.Size,
+			"content_type", contentType)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to upload file", http.StatusInternalServerError)
+		return
+	}
+
+	// Get other fields
+	title := req.FormValue("title")
+	if title == "" {
+		utils.JSONError(w, api_errors.ErrBadRequest, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse optional fields
+	duration := 0
+	if d := req.FormValue("duration"); d != "" {
+		if parsedDuration, err := strconv.Atoi(d); err == nil {
+			duration = parsedDuration
+		}
+	}
+
+	track := &models.Track{
+		Title:         title,
+		ArtistID:      userID,
+		FileURL:       fileURL,
+		Duration:      duration,
+		CoverImageURL: req.FormValue("cover_image_url"),
+		Genre:         req.FormValue("genre"),
+	}
+
+	repo := repository.NewRepository(r.Db)
+	if err := repo.CreateTrack(track); err != nil {
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to create track", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, track, http.StatusCreated)
+}
+
+// sanitizeFilename removes path separators and problematic characters from filenames
+func sanitizeFilename(filename string) string {
+	// Get just the base filename, removing any directory paths
+	filename = filepath.Base(filename)
+	// Replace path separators with underscores as extra safety
+	filename = strings.ReplaceAll(filename, "/", "_")
+	filename = strings.ReplaceAll(filename, "\\", "_")
+	return filename
 }

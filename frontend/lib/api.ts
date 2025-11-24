@@ -9,8 +9,12 @@ interface RequestOptions extends RequestInit {
 export async function makeRequest(url: string, options: RequestOptions = {}) {
     const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`
 
-    const defaultHeaders = {
+    const defaultHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
+    }
+
+    if (options.body instanceof FormData) {
+        delete defaultHeaders['Content-Type']
     }
 
     const config = {
@@ -26,7 +30,7 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
     if (!response.ok) {
         // Try to get error message from response
         let errorMessage = 'An error occurred. Please try again.'
-        
+
         try {
             const errorData = await response.json()
             errorMessage = errorData.message || errorData.error || errorMessage
@@ -46,7 +50,7 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
                 errorMessage = 'Server error. Please try again later.'
             }
         }
-        
+
         throw new Error(errorMessage)
     }
 
@@ -60,7 +64,7 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
 export async function refreshAccessToken(): Promise<string | null> {
     try {
         const refreshToken = Cookies.get('refresh_token')
-        
+
         if (!refreshToken) {
             return null
         }
@@ -106,25 +110,41 @@ export async function makeAuthenticatedRequest(url: string, options: RequestOpti
     }
 
     try {
+        const requestHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...headers,
+        }
+
+        if (options.body instanceof FormData) {
+            delete requestHeaders['Content-Type']
+        }
+
         // First attempt with current token
         const response = await fetch(
             url.startsWith('http') ? url : `${BASE_URL}${url}`,
             {
                 ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...headers,
-                },
+                headers: requestHeaders,
             }
         )
 
         // If we get 401 Unauthorized, try to refresh the token
         if (response.status === 401) {
             const newToken = await refreshAccessToken()
-            
+
             if (!newToken) {
                 // Refresh failed, throw error to redirect to login
                 throw new Error('Session expired. Please login again.')
+            }
+
+            const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+                Authorization: `Bearer ${newToken}`,
+            }
+
+            if (options.body instanceof FormData) {
+                delete retryHeaders['Content-Type']
             }
 
             // Retry the request with new token
@@ -132,11 +152,7 @@ export async function makeAuthenticatedRequest(url: string, options: RequestOpti
                 url.startsWith('http') ? url : `${BASE_URL}${url}`,
                 {
                     ...options,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers,
-                        Authorization: `Bearer ${newToken}`,
-                    },
+                    headers: retryHeaders,
                 }
             )
 
