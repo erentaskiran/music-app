@@ -1,8 +1,11 @@
 "use client"
 
+import { useEffect } from "react"
 import { motion } from "framer-motion"
 import { Music, Upload, Users, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { makeAuthenticatedRequest } from "@/lib/api"
+import { withAuth } from "@/lib/auth"
 
 const stats = [
   {
@@ -43,7 +46,21 @@ const recentUploads = [
   { title: "City Lights", artist: "Urban Symphony", date: "2 days ago" },
 ]
 
-export default function DashboardPage() {
+function DashboardPage() {
+  // Check authentication and refresh token if needed when page loads
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        // This will automatically refresh the token if needed
+        await makeAuthenticatedRequest('/me', { method: 'GET' })
+      } catch {
+        // If auth fails, user will be redirected by the error handler
+        console.log('Auth check completed')
+      }
+    }
+    checkAuth()
+  }, [])
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
@@ -162,3 +179,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+export default withAuth(DashboardPage)

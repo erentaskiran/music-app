@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Music, MoreVertical, Pencil, Trash2, Search } from "lucide-react"
+import { Music, Pencil, Trash2, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { withAuth } from "@/lib/auth"
 import {
   Table,
   TableBody,
@@ -93,7 +94,7 @@ const initialTracks: MusicTrack[] = [
   },
 ]
 
-export default function MusicLibraryPage() {
+function MusicLibraryPage() {
   const [tracks, setTracks] = useState<MusicTrack[]>(initialTracks)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -109,7 +110,8 @@ export default function MusicLibraryPage() {
   }
 
   const handleEdit = (id: string) => {
-    toast.info("Edit functionality coming soon")
+    // TODO: Implement edit functionality
+    toast.info(`Edit functionality coming soon for track ${id}`)
   }
 
   const formatDate = (dateString: string) => {
@@ -327,3 +329,5 @@ export default function MusicLibraryPage() {
     </div>
   )
 }
+
+export default withAuth(MusicLibraryPage)

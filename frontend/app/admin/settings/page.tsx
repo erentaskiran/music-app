@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { withAuth } from "@/lib/auth"
 
-export default function SettingsPage() {
+function SettingsPage() {
   const handleSave = () => {
     toast.success("Settings saved successfully")
   }
@@ -225,3 +226,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+export default withAuth(SettingsPage)
