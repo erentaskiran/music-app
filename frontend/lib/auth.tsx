@@ -59,6 +59,8 @@ export function useAuth() {
   const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
+    // This is a valid use case for setting state in useEffect - mount detection pattern
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasMounted(true)
   }, [])
 
