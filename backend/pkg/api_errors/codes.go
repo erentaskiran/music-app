@@ -9,4 +9,6 @@ const (
 	ErrInvalidToken       = "INVALID_TOKEN"
 	ErrMissingFields      = "MISSING_FIELDS"
 	ErrUserAlreadyExists  = "USER_ALREADY_EXISTS"
+	ErrNotFound           = "NOT_FOUND"
+	ErrTrackNotFound      = "TRACK_NOT_FOUND"
 )

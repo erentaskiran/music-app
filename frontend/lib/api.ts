@@ -278,3 +278,39 @@ export async function logout(): Promise<void> {
 export function isAuthenticated(): boolean {
     return !!Cookies.get('jwt')
 }
+
+/**
+ * Track type definition
+ */
+export interface TrackResponse {
+    id: number
+    title: string
+    artist_id: number
+    artist_name: string
+    file_url: string
+    duration?: number
+    cover_image_url?: string
+    genre?: string
+    lyrics?: string
+    quality_bitrate?: number
+    status: string
+    created_at: string
+    updated_at: string
+}
+
+/**
+ * Fetches all published tracks
+ */
+export async function getTracks(limit = 50, offset = 0): Promise<TrackResponse[]> {
+    return makeRequest(`/tracks?limit=${limit}&offset=${offset}`, {
+        method: 'GET',
+    })
+}
+
+/**
+ * Gets the streaming URL for a track
+ */
+export function getTrackStreamUrl(trackId: number): string {
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+    return `${baseUrl}/api/tracks/${trackId}/stream`
+}

@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
+	"io"
 	"log/slog"
 	"music-app/backend/internal/api/auth"
 	"music-app/backend/internal/middleware"
@@ -17,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/minio/minio-go/v7"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -60,6 +63,8 @@ func (r *Router) NewRouter() *mux.Router {
 	router.HandleFunc("/api/login", h.LoginHandler).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/api/refresh", h.RefreshHandler).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/api/logout", h.LogoutHandler).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/tracks", r.GetTracksHandler).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/tracks/{id}/stream", r.StreamTrackHandler).Methods(http.MethodGet, http.MethodOptions)
 
 	// Protected routes
 	protected := router.PathPrefix("/api").Subrouter()
@@ -221,4 +226,178 @@ func sanitizeFilename(filename string) string {
 	filename = strings.ReplaceAll(filename, "/", "_")
 	filename = strings.ReplaceAll(filename, "\\", "_")
 	return filename
+}
+
+// StreamTrackHandler godoc
+// @Summary Stream a track
+// @Description Streams an audio track by ID. Supports HTTP Range requests for seeking.
+// @Tags Tracks
+// @Produce audio/mpeg
+// @Produce audio/wav
+// @Produce audio/flac
+// @Param id path int true "Track ID"
+// @Success 200 {file} binary "Audio stream"
+// @Success 206 {file} binary "Partial audio stream (range request)"
+// @Failure 400 {object} utils.ErrorResponse "Invalid track ID"
+// @Failure 404 {object} utils.ErrorResponse "Track not found"
+// @Failure 500 {object} utils.ErrorResponse "Internal server error"
+// @Router /api/tracks/{id}/stream [get]
+func (r *Router) StreamTrackHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	trackIDStr := vars["id"]
+
+	trackID, err := strconv.Atoi(trackIDStr)
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid track ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get track from database
+	repo := repository.NewRepository(r.Db)
+	track, err := repo.GetTrackByID(trackID)
+	if err != nil {
+		slog.Error("Failed to get track", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get track", http.StatusInternalServerError)
+		return
+	}
+	if track == nil {
+		utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
+		return
+	}
+
+	// Extract object name from file URL
+	objectName := r.Storage.ExtractObjectName(track.FileURL)
+	if objectName == "" {
+		slog.Error("Failed to extract object name from URL", "file_url", track.FileURL)
+		utils.JSONError(w, api_errors.ErrInternalServer, "invalid file URL", http.StatusInternalServerError)
+		return
+	}
+
+	// Get object info for content length and type
+	objInfo, err := r.Storage.GetObjectInfo(req.Context(), objectName)
+	if err != nil {
+		slog.Error("Failed to get object info", "error", err, "object_name", objectName)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get file info", http.StatusInternalServerError)
+		return
+	}
+
+	fileSize := objInfo.Size
+	contentType := objInfo.ContentType
+	if contentType == "" {
+		contentType = "audio/mpeg" // Default to MP3
+	}
+
+	// Handle Range header for seeking support
+	rangeHeader := req.Header.Get("Range")
+	var start, end int64 = 0, fileSize - 1
+
+	opts := minio.GetObjectOptions{}
+
+	if rangeHeader != "" {
+		// Parse Range header (e.g., "bytes=0-1023")
+		if strings.HasPrefix(rangeHeader, "bytes=") {
+			rangeSpec := strings.TrimPrefix(rangeHeader, "bytes=")
+			parts := strings.Split(rangeSpec, "-")
+			if len(parts) == 2 {
+				if parts[0] != "" {
+					start, _ = strconv.ParseInt(parts[0], 10, 64)
+				}
+				if parts[1] != "" {
+					end, _ = strconv.ParseInt(parts[1], 10, 64)
+				} else {
+					end = fileSize - 1
+				}
+			}
+		}
+
+		// Validate range
+		if start > end || start >= fileSize {
+			w.Header().Set("Content-Range", fmt.Sprintf("bytes */%d", fileSize))
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+
+		if end >= fileSize {
+			end = fileSize - 1
+		}
+
+		// Set range for MinIO request
+		opts.SetRange(start, end)
+	}
+
+	// Get object from MinIO
+	obj, err := r.Storage.GetObject(req.Context(), objectName, opts)
+	if err != nil {
+		slog.Error("Failed to get object from storage", "error", err, "object_name", objectName)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to stream file", http.StatusInternalServerError)
+		return
+	}
+	defer obj.Close()
+
+	// Set response headers
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", track.Title))
+
+	if rangeHeader != "" {
+		// Partial content response
+		contentLength := end - start + 1
+		w.Header().Set("Content-Length", strconv.FormatInt(contentLength, 10))
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
+		w.WriteHeader(http.StatusPartialContent)
+	} else {
+		// Full content response
+		w.Header().Set("Content-Length", strconv.FormatInt(fileSize, 10))
+		w.WriteHeader(http.StatusOK)
+	}
+
+	// Stream the content
+	if _, err := io.Copy(w, obj); err != nil {
+		slog.Error("Failed to stream file content", "error", err, "track_id", trackID)
+		// Can't send error response here as headers are already sent
+		return
+	}
+}
+
+// GetTracksHandler godoc
+// @Summary Get all tracks
+// @Description Retrieves a list of all published tracks with artist information
+// @Tags Tracks
+// @Produce json
+// @Param limit query int false "Number of tracks to return (default 50)"
+// @Param offset query int false "Offset for pagination (default 0)"
+// @Success 200 {array} models.TrackWithArtist
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/tracks [get]
+func (r *Router) GetTracksHandler(w http.ResponseWriter, req *http.Request) {
+	// Parse query parameters
+	limit := 50
+	offset := 0
+
+	if l := req.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	if o := req.URL.Query().Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	repo := repository.NewRepository(r.Db)
+	tracks, err := repo.GetAllTracks(limit, offset)
+	if err != nil {
+		slog.Error("Failed to get tracks", "error", err)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get tracks", http.StatusInternalServerError)
+		return
+	}
+
+	// Return empty array instead of null if no tracks
+	if tracks == nil {
+		tracks = []models.TrackWithArtist{}
+	}
+
+	utils.JSONSuccess(w, tracks, http.StatusOK)
 }

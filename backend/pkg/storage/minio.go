@@ -6,6 +6,7 @@ import (
 	"io"
 	"music-app/backend/pkg/config"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -76,4 +77,32 @@ func (m *MinioClient) UploadFile(ctx context.Context, fileReader interface{}, fi
 
 	url := fmt.Sprintf("%s://%s/%s/%s", protocol, m.Endpoint, m.BucketName, info.Key)
 	return url, nil
+}
+
+// GetObject retrieves an object from MinIO with optional range support for streaming
+func (m *MinioClient) GetObject(ctx context.Context, objectName string, opts minio.GetObjectOptions) (*minio.Object, error) {
+	obj, err := m.Client.GetObject(ctx, m.BucketName, objectName, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object from MinIO: %w", err)
+	}
+	return obj, nil
+}
+
+// GetObjectInfo retrieves object information (size, content type, etc.)
+func (m *MinioClient) GetObjectInfo(ctx context.Context, objectName string) (minio.ObjectInfo, error) {
+	info, err := m.Client.StatObject(ctx, m.BucketName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		return minio.ObjectInfo{}, fmt.Errorf("failed to get object info from MinIO: %w", err)
+	}
+	return info, nil
+}
+
+// ExtractObjectName extracts the object name from a full MinIO URL
+func (m *MinioClient) ExtractObjectName(fileURL string) string {
+	// URL format: http(s)://endpoint/bucket/objectname
+	prefix := fmt.Sprintf("http://%s/%s/", m.Endpoint, m.BucketName)
+	if m.UseSSL {
+		prefix = fmt.Sprintf("https://%s/%s/", m.Endpoint, m.BucketName)
+	}
+	return strings.TrimPrefix(fileURL, prefix)
 }
