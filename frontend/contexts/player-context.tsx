@@ -132,11 +132,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
     setCurrentTrack(track)
     
-    // Record listen to backend only if authenticated (fire and forget)
-    if (isAuthenticated()) {
-      recordListen(track.id).catch(() => {
-        // Silently fail - don't log errors for listen recording
-      })
+    recordListen(track.id).catch(() => {
+      // Silently fail - don't log errors for listen recording
+    })
     }
     
     // Use the streaming endpoint
