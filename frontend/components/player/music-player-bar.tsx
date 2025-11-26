@@ -61,11 +61,11 @@ export function MusicPlayerBar() {
       : Volume2
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-zinc-900 to-zinc-900/95 backdrop-blur-lg border-t border-white/10">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-background via-card to-card/95 backdrop-blur-lg border-t border-border">
       {/* Progress bar at top - thin line */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 cursor-pointer group">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-border cursor-pointer group">
         <div 
-          className="h-full bg-white transition-all duration-100"
+          className="h-full bg-foreground transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
         <div className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -83,7 +83,7 @@ export function MusicPlayerBar() {
         {/* Left: Track Info */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Album Art */}
-          <div className="relative h-14 w-14 rounded-md overflow-hidden bg-zinc-800 flex-shrink-0 shadow-lg">
+          <div className="relative h-14 w-14 rounded-md overflow-hidden bg-muted flex-shrink-0 shadow-lg">
             {currentTrack.cover_image_url ? (
               <Image
                 src={currentTrack.cover_image_url}
@@ -92,18 +92,18 @@ export function MusicPlayerBar() {
                 className="object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-800">
-                <Music2 className="w-6 h-6 text-zinc-500" />
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Music2 className="w-6 h-6 text-muted-foreground" />
               </div>
             )}
           </div>
 
           {/* Track Details */}
           <div className="min-w-0">
-            <h4 className="text-white font-medium text-sm truncate">
+            <h4 className="text-foreground font-medium text-sm truncate">
               {currentTrack.title}
             </h4>
-            <p className="text-zinc-400 text-xs truncate">
+            <p className="text-muted-foreground text-xs truncate">
               {currentTrack.artist_name || `Artist #${currentTrack.artist_id}`}
             </p>
           </div>
@@ -116,7 +116,7 @@ export function MusicPlayerBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               disabled
             >
               <SkipBack className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function MusicPlayerBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-white text-black hover:bg-white/90 hover:scale-105 transition-transform"
+              className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 transition-transform"
               onClick={togglePlay}
               disabled={isLoading}
             >
@@ -143,7 +143,7 @@ export function MusicPlayerBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               disabled
             >
               <SkipForward className="h-4 w-4" />
@@ -152,7 +152,7 @@ export function MusicPlayerBar() {
 
           {/* Time & Progress (Desktop) */}
           <div className="hidden md:flex items-center gap-2 w-full max-w-md">
-            <span className="text-xs text-zinc-400 w-10 text-right tabular-nums">
+            <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
               {formatTime(currentTime)}
             </span>
             <Slider
@@ -162,7 +162,7 @@ export function MusicPlayerBar() {
               step={0.1}
               className="flex-1"
             />
-            <span className="text-xs text-zinc-400 w-10 tabular-nums">
+            <span className="text-xs text-muted-foreground w-10 tabular-nums">
               {formatTime(duration)}
             </span>
           </div>
@@ -174,7 +174,7 @@ export function MusicPlayerBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={toggleMute}
             >
               <VolumeIcon className="h-4 w-4" />
