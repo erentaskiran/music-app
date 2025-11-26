@@ -33,6 +33,7 @@ const PlayerContext = createContext<PlayerContextType | null>(null)
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const initialVolumeRef = useRef(1)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -45,7 +46,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
       audioRef.current = new Audio()
-      audioRef.current.volume = volume
+      audioRef.current.volume = initialVolumeRef.current
     }
 
     return () => {

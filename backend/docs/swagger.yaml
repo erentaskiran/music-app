@@ -19,6 +19,38 @@ definitions:
       message:
         type: string
     type: object
+  models.RecentlyPlayedTrack:
+    properties:
+      artist_id:
+        type: integer
+      artist_name:
+        type: string
+      cover_image_url:
+        type: string
+      duration:
+        type: integer
+      file_url:
+        type: string
+      genre:
+        type: string
+      id:
+        type: integer
+      played_at:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  models.RecordListenRequest:
+    properties:
+      device:
+        type: string
+      listen_duration:
+        type: integer
+      track_id:
+        type: integer
+    type: object
   models.RegisterRequest:
     properties:
       email:
@@ -32,6 +64,35 @@ definitions:
     properties:
       artist_id:
         type: integer
+      cover_image_url:
+        type: string
+      created_at:
+        type: string
+      duration:
+        type: integer
+      file_url:
+        type: string
+      genre:
+        type: string
+      id:
+        type: integer
+      lyrics:
+        type: string
+      quality_bitrate:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.TrackWithArtist:
+    properties:
+      artist_id:
+        type: integer
+      artist_name:
+        type: string
       cover_image_url:
         type: string
       created_at:
@@ -99,6 +160,103 @@ paths:
       summary: Health Check
       tags:
       - Public
+  /api/history/clear:
+    delete:
+      consumes:
+      - application/json
+      description: Clears all listening history for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Clear Listening History
+      tags:
+      - History
+  /api/history/listen:
+    post:
+      consumes:
+      - application/json
+      description: Records that the user has listened to a track
+      parameters:
+      - description: Listen details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RecordListenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Record a Track Listen
+      tags:
+      - History
+  /api/history/recently-played:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the user's recently played tracks
+      parameters:
+      - description: Number of tracks to return (default 20, max 50)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RecentlyPlayedTrack'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Recently Played Tracks
+      tags:
+      - History
   /api/login:
     post:
       consumes:
@@ -232,12 +390,40 @@ paths:
       tags:
       - Auth
   /api/tracks:
+    get:
+      description: Retrieves a list of all published tracks with artist information
+      parameters:
+      - description: Number of tracks to return (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.TrackWithArtist'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get all tracks
+      tags:
+      - Tracks
     post:
       consumes:
       - multipart/form-data
-      description: Creates a new track by uploading a file and saving details
+      description: 'Creates a new track by uploading a file and saving details. Maximum
+        file size: 10MB.'
       parameters:
-      - description: Track file (MP3)
+      - description: Track file (MP3, WAV, FLAC - Max 10MB)
         in: formData
         name: file
         required: true
@@ -279,4 +465,42 @@ paths:
       summary: Create a new track
       tags:
       - Protected
+  /api/tracks/{id}/stream:
+    get:
+      description: Streams an audio track by ID. Supports HTTP Range requests for
+        seeking.
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - audio/mpeg
+      - audio/wav
+      - audio/flac
+      responses:
+        "200":
+          description: Audio stream
+          schema:
+            type: file
+        "206":
+          description: Partial audio stream (range request)
+          schema:
+            type: file
+        "400":
+          description: Invalid track ID
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Track not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Stream a track
+      tags:
+      - Tracks
 swagger: "2.0"

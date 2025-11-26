@@ -53,7 +53,6 @@ export function withAuth<P extends object>(
  */
 export function useAuth() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
 
   // Use useSyncExternalStore to safely read auth state from cookies
   const isAuthed = useSyncExternalStore(
@@ -62,10 +61,9 @@ export function useAuth() {
     getServerSnapshot
   )
 
-  // Mark loading as complete after first render
-  useEffect(() => {
-    setIsLoading(false)
-  }, [])
+  // isLoading is true only on server (when getServerSnapshot returns false)
+  // On client, useSyncExternalStore immediately returns the correct value
+  const isLoading = typeof window === 'undefined'
 
   /**
    * Redirects to login page if not authenticated

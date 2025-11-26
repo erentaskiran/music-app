@@ -8,7 +8,6 @@ import { Sparkles, Music2, Play, Loader2, Shuffle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import Image from 'next/image'
 
 export function QuickPicks() {
   const [tracks, setTracks] = useState<Track[]>([])
