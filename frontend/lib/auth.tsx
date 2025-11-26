@@ -8,6 +8,7 @@ import { isAuthenticated } from "./api"
 const subscribe = () => () => {}
 
 // Server snapshot always returns false to avoid hydration mismatch
+// This ensures server and initial client render match
 const getServerSnapshot = () => false
 
 /**
@@ -53,6 +54,13 @@ export function withAuth<P extends object>(
  */
 export function useAuth() {
   const router = useRouter()
+  
+  // Track if we've mounted on the client to avoid hydration mismatch
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   // Use useSyncExternalStore to safely read auth state from cookies
   const isAuthed = useSyncExternalStore(
@@ -61,9 +69,9 @@ export function useAuth() {
     getServerSnapshot
   )
 
-  // isLoading is true only on server (when getServerSnapshot returns false)
-  // On client, useSyncExternalStore immediately returns the correct value
-  const isLoading = typeof window === 'undefined'
+  // isLoading is true until we've mounted on the client
+  // This ensures server render and initial client render both show loading state
+  const isLoading = !hasMounted
 
   /**
    * Redirects to login page if not authenticated
