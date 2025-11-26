@@ -1,8 +1,14 @@
 "use client"
 
-import { useEffect, useCallback, useState } from "react"
+import { useEffect, useCallback, useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated } from "./api"
+
+// Subscribe function for useSyncExternalStore (no-op since auth doesn't change externally)
+const subscribe = () => () => {}
+
+// Server snapshot always returns false to avoid hydration mismatch
+const getServerSnapshot = () => false
 
 /**
  * Higher-Order Component (HOC) to protect routes
@@ -14,17 +20,21 @@ export function withAuth<P extends object>(
   return function ProtectedRoute(props: P) {
     const router = useRouter()
     const [isChecking, setIsChecking] = useState(true)
-    const [isAuthed, setIsAuthed] = useState(false)
+    
+    // Use useSyncExternalStore to safely read auth state
+    const isAuthed = useSyncExternalStore(
+      subscribe,
+      isAuthenticated,
+      getServerSnapshot
+    )
 
     useEffect(() => {
-      const authed = isAuthenticated()
-      setIsAuthed(authed)
       setIsChecking(false)
       
-      if (!authed) {
+      if (!isAuthed) {
         router.push("/login")
       }
-    }, [router])
+    }, [router, isAuthed])
 
     // Show nothing while checking auth
     if (isChecking || !isAuthed) {
@@ -39,16 +49,21 @@ export function withAuth<P extends object>(
 /**
  * Hook to check authentication status and require auth for actions
  * Can be used in components to conditionally render content or require login
- * Uses state to avoid hydration mismatch
+ * Uses useSyncExternalStore to avoid hydration mismatch
  */
 export function useAuth() {
   const router = useRouter()
-  const [isAuthed, setIsAuthed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Check auth status on client side only
+  // Use useSyncExternalStore to safely read auth state from cookies
+  const isAuthed = useSyncExternalStore(
+    subscribe,
+    isAuthenticated,
+    getServerSnapshot
+  )
+
+  // Mark loading as complete after first render
   useEffect(() => {
-    setIsAuthed(isAuthenticated())
     setIsLoading(false)
   }, [])
 
