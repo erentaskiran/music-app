@@ -70,6 +70,9 @@ func (r *Router) NewRouter() *mux.Router {
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.HandleFunc("/me", r.MeHandler).Methods(http.MethodGet, http.MethodOptions)
 	protected.HandleFunc("/tracks/upload", r.CreateTrackHandler).Methods(http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/history/recently-played", r.GetRecentlyPlayedHandler).Methods(http.MethodGet, http.MethodOptions)
+	protected.HandleFunc("/history/listen", r.RecordListenHandler).Methods(http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/history/clear", r.ClearHistoryHandler).Methods(http.MethodDelete, http.MethodOptions)
 	protected.Use(authMiddleware.Authenticated)
 
 	return router
