@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { getTracks, TrackResponse } from '@/lib/api'
 import { TrackList } from '@/components/player/track-list'
 import { Track } from '@/lib/types'
-import { Music2, Loader2 } from 'lucide-react'
+import { Music2, Loader2, Disc3 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export function TracksSection() {
   const [tracks, setTracks] = useState<Track[]>([])
@@ -46,10 +48,17 @@ export function TracksSection() {
   if (loading) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold text-white mb-6">All Tracks</h2>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-        </div>
+        <Card className="border-border bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Disc3 className="h-5 w-5 text-chart-2" />
+              All Tracks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
       </section>
     )
   }
@@ -57,21 +66,38 @@ export function TracksSection() {
   if (error) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold text-white mb-6">All Tracks</h2>
-        <div className="text-center py-12 text-zinc-500">
-          <Music2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>{error}</p>
-        </div>
+        <Card className="border-border bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Disc3 className="h-5 w-5 text-chart-2" />
+              All Tracks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center py-12 text-muted-foreground">
+            <Music2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>{error}</p>
+          </CardContent>
+        </Card>
       </section>
     )
   }
 
   return (
     <section className="py-8">
-      <h2 className="text-2xl font-bold text-white mb-6">All Tracks</h2>
-      <div className="bg-white/5 rounded-lg p-4">
-        <TrackList tracks={tracks} />
-      </div>
+      <Card className="border-border bg-card/50 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2">
+            <Disc3 className="h-5 w-5 text-chart-2" />
+            All Tracks
+            <Badge variant="secondary" className="ml-2">
+              {tracks.length} songs
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TrackList tracks={tracks} />
+        </CardContent>
+      </Card>
     </section>
   )
 }
