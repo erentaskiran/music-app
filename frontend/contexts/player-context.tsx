@@ -135,7 +135,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     recordListen(track.id).catch(() => {
       // Silently fail - don't log errors for listen recording
     })
-    }
     
     // Use the streaming endpoint
     const streamUrl = `${BASE_URL}/api/tracks/${track.id}/stream`
