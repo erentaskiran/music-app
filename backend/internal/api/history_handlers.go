@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"music-app/backend/internal/middleware"
 	"music-app/backend/internal/models"
 	"music-app/backend/internal/repository"
 	"music-app/backend/internal/utils"
 	"music-app/backend/pkg/api_errors"
+	"net"
 	"net/http"
 	"strconv"
 )
@@ -108,9 +110,16 @@ func (r *Router) RecordListenHandler(w http.ResponseWriter, req *http.Request) {
 		ip = req.RemoteAddr
 	}
 
+	// Strip port from IP address if present (INET type doesn't accept port)
+	if host, _, err := net.SplitHostPort(ip); err == nil {
+		ip = host
+	}
+
 	// Record the listen
 	err = repo.RecordListen(listenReq.TrackID, &userID, listenReq.Device, ip, listenReq.ListenDuration)
 	if err != nil {
+		// Log the actual error for debugging
+		fmt.Printf("RecordListen error: %v, IP: %s, TrackID: %d, UserID: %d\n", err, ip, listenReq.TrackID, userID)
 		utils.JSONError(w, api_errors.ErrInternalServer, "failed to record listen", http.StatusInternalServerError)
 		return
 	}

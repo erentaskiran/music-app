@@ -63,7 +63,7 @@ CREATE TABLE "listens" (
   "id" SERIAL PRIMARY KEY,
   "track_id" INT NOT NULL,
   "user_id" INT,
-  "device" VARCHAR(100),
+  "device" TEXT,
   "ip" INET,
   "listen_duration" INT,
   "timestamp" TIMESTAMP DEFAULT (NOW())
