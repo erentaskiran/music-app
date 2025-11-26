@@ -1,7 +1,9 @@
 "use client"
 
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Track } from '@/lib/types'
+import { recordListen, isAuthenticated } from '@/lib/api'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
@@ -29,6 +31,7 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | null>(null)
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -116,11 +119,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const playTrack = useCallback((track: Track) => {
+    // Check authentication before playing
+    if (!isAuthenticated()) {
+      router.push('/login')
+      return
+    }
+
     const audio = audioRef.current
     if (!audio) return
 
     setIsLoading(true)
     setCurrentTrack(track)
+    
+    // Record listen to backend only if authenticated (fire and forget)
+    if (isAuthenticated()) {
+      recordListen(track.id).catch(() => {
+        // Silently fail - don't log errors for listen recording
+      })
+    }
     
     // Use the streaming endpoint
     const streamUrl = `${BASE_URL}/api/tracks/${track.id}/stream`
@@ -131,7 +147,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to play:', error)
       setIsLoading(false)
     })
-  }, [])
+  }, [router])
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
