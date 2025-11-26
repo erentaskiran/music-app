@@ -22,7 +22,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       className="cursor-pointer"
     >
-      <Card className="overflow-hidden border-white/10 bg-white/5 backdrop-blur-sm hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-shadow duration-300">
+      <Card className="overflow-hidden border-border bg-card/50 backdrop-blur-sm hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-shadow duration-300">
         <CardContent className="p-0">
           <div className="relative aspect-square w-full overflow-hidden">
             <Image
@@ -34,8 +34,8 @@ export function AlbumCard({ album }: AlbumCardProps) {
             />
           </div>
           <div className="p-4">
-            <h3 className="font-semibold text-white line-clamp-1">{album.title}</h3>
-            <p className="text-sm text-gray-400 line-clamp-1">{album.artist}</p>
+            <h3 className="font-semibold line-clamp-1">{album.title}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-1">{album.artist}</p>
           </div>
         </CardContent>
       </Card>
