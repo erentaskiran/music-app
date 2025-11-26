@@ -314,3 +314,54 @@ export function getTrackStreamUrl(trackId: number): string {
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
     return `${baseUrl}/api/tracks/${trackId}/stream`
 }
+
+/**
+ * Recently played track response from API
+ */
+export interface RecentlyPlayedResponse {
+    id: number
+    title: string
+    artist_id: number
+    artist_name: string
+    file_url: string
+    duration?: number
+    cover_image_url?: string
+    genre?: string
+    status: string
+    played_at: string
+}
+
+/**
+ * Fetches the user's recently played tracks
+ * Requires authentication
+ */
+export async function getRecentlyPlayed(limit = 20): Promise<RecentlyPlayedResponse[]> {
+    return makeAuthenticatedRequest(`/history/recently-played?limit=${limit}`, {
+        method: 'GET',
+    })
+}
+
+/**
+ * Records that a track was played
+ * Requires authentication
+ */
+export async function recordListen(trackId: number, listenDuration?: number): Promise<void> {
+    return makeAuthenticatedRequest('/history/listen', {
+        method: 'POST',
+        body: JSON.stringify({
+            track_id: trackId,
+            listen_duration: listenDuration || 0,
+            device: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        }),
+    })
+}
+
+/**
+ * Clears the user's listening history
+ * Requires authentication
+ */
+export async function clearHistory(): Promise<void> {
+    return makeAuthenticatedRequest('/history/clear', {
+        method: 'DELETE',
+    })
+}
