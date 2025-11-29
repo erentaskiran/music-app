@@ -56,7 +56,9 @@ export function SearchBar() {
   }, [query])
 
   const handlePlay = (track: Track) => {
-    playTrack(track)
+    const index = results.findIndex(t => t.id === track.id)
+    const newQueue = index !== -1 ? results.slice(index + 1) : []
+    playTrack(track, newQueue)
     setShowResults(false)
     setQuery("")
   }

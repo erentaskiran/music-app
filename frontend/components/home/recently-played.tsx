@@ -142,11 +142,11 @@ export function RecentlyPlayed() {
       </div>
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4">
-          {recentTracks.map((track) => (
+          {recentTracks.map((track, index) => (
             <RecentTrackCard 
               key={`${track.id}-${track.played_at}`} 
               track={track} 
-              onPlay={() => playTrack(track)}
+              onPlay={() => playTrack(track, recentTracks.slice(index + 1))}
               isPlaying={currentTrack?.id === track.id && isPlaying}
             />
           ))}

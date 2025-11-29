@@ -47,14 +47,14 @@ export function QuickPicks() {
 
   const handlePlayAll = () => {
     if (tracks.length > 0) {
-      playTrack(tracks[0])
+      playTrack(tracks[0], tracks.slice(1))
     }
   }
 
   const handleShuffle = () => {
     if (tracks.length > 0) {
-      const randomIndex = Math.floor(Math.random() * tracks.length)
-      playTrack(tracks[randomIndex])
+      const shuffled = [...tracks].sort(() => Math.random() - 0.5)
+      playTrack(shuffled[0], shuffled.slice(1))
     }
   }
 
@@ -105,11 +105,11 @@ export function QuickPicks() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tracks.map((track) => (
+        {tracks.map((track, index) => (
           <QuickPickCard 
             key={track.id} 
             track={track} 
-            onPlay={() => playTrack(track)}
+            onPlay={() => playTrack(track, tracks.slice(index + 1))}
             isPlaying={currentTrack?.id === track.id && isPlaying}
           />
         ))}

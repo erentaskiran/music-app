@@ -8,15 +8,22 @@ import { searchTracks } from "@/lib/api"
 import { Track } from "@/lib/types"
 import { usePlayer } from "@/contexts/player-context"
 import { Button } from "@/components/ui/button"
-import { Play, Pause, Heart } from "lucide-react"
+import { Play, Pause, Heart, MoreHorizontal, ListPlus, PlayCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q")
   const [results, setResults] = useState<Track[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
+  const { playTrack, currentTrack, isPlaying, togglePlay, addToQueue, playNext } = usePlayer()
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -83,7 +90,8 @@ function SearchResults() {
                         if (currentTrack?.id === track.id) {
                           togglePlay()
                         } else {
-                          playTrack(track)
+                          // Play this track and queue the rest of the results
+                          playTrack(track, results.slice(index + 1))
                         }
                       }}
                     >
@@ -113,10 +121,35 @@ function SearchResults() {
                     {track.genre || "Unknown Genre"}
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                       <Heart className="h-4 w-4" />
                     </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          playNext(track)
+                          toast.success("Added to play next")
+                        }}>
+                          <PlayCircle className="mr-2 h-4 w-4" />
+                          Play Next
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          addToQueue(track)
+                          toast.success("Added to queue")
+                        }}>
+                          <ListPlus className="mr-2 h-4 w-4" />
+                          Add to Queue
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <div className="text-sm text-muted-foreground w-12 text-right">
                       {formatDuration(track.duration)}
                     </div>

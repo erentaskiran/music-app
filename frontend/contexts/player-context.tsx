@@ -16,9 +16,10 @@ interface PlayerContextType {
   volume: number
   isMuted: boolean
   isLoading: boolean
+  queue: Track[]
 
   // Actions
-  playTrack: (track: Track) => void
+  playTrack: (track: Track, newQueue?: Track[]) => void
   togglePlay: () => void
   pause: () => void
   resume: () => void
@@ -26,6 +27,11 @@ interface PlayerContextType {
   setVolume: (volume: number) => void
   toggleMute: () => void
   stop: () => void
+  addToQueue: (track: Track) => void
+  playNext: (track: Track) => void
+  nextTrack: () => void
+  previousTrack: () => void
+  clearQueue: () => void
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
@@ -41,6 +47,116 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [queue, setQueue] = useState<Track[]>([])
+  const [history, setHistory] = useState<Track[]>([])
+
+  // Refs for accessing state in event listeners
+  const queueRef = useRef<Track[]>([])
+  const historyRef = useRef<Track[]>([])
+  const currentTrackRef = useRef<Track | null>(null)
+
+  useEffect(() => { queueRef.current = queue }, [queue])
+  useEffect(() => { historyRef.current = history }, [history])
+  useEffect(() => { currentTrackRef.current = currentTrack }, [currentTrack])
+
+  const playTrack = useCallback((track: Track, newQueue?: Track[]) => {
+    // Check authentication before playing
+    if (!isAuthenticated()) {
+      router.push('/login')
+      return
+    }
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    // Add current track to history if it exists and is different from the new track
+    if (currentTrackRef.current && currentTrackRef.current.id !== track.id) {
+      setHistory(prev => [...prev, currentTrackRef.current!])
+    }
+
+    if (newQueue) {
+      setQueue(newQueue)
+    }
+
+    setIsLoading(true)
+    setCurrentTrack(track)
+    
+    recordListen(track.id).catch(() => {
+      // Silently fail - don't log errors for listen recording
+    })
+    
+    // Use the streaming endpoint
+    const streamUrl = `${BASE_URL}/api/tracks/${track.id}/stream`
+    audio.src = streamUrl
+    audio.load()
+    
+    audio.play().catch((error) => {
+      console.error('Failed to play:', error)
+      setIsLoading(false)
+    })
+  }, [router])
+
+  const nextTrack = useCallback(() => {
+    const queue = queueRef.current
+    if (queue.length > 0) {
+      const next = queue[0]
+      setQueue(prev => prev.slice(1))
+      playTrack(next)
+    } else {
+      setIsPlaying(false)
+      setCurrentTime(0)
+    }
+  }, [playTrack])
+
+  const previousTrack = useCallback(() => {
+    const history = historyRef.current
+    if (history.length > 0) {
+      const previous = history[history.length - 1]
+      setHistory(prev => prev.slice(0, -1))
+      
+      // Add current track to front of queue so we can go "Next" back to it
+      if (currentTrackRef.current) {
+        setQueue(prev => [currentTrackRef.current!, ...prev])
+      }
+      
+      // We need to bypass the history addition in playTrack for this specific case
+      // But playTrack adds to history. 
+      // Let's just manually set it here to avoid circular history addition
+      
+      const audio = audioRef.current
+      if (!audio) return
+
+      setIsLoading(true)
+      setCurrentTrack(previous)
+      
+      const streamUrl = `${BASE_URL}/api/tracks/${previous.id}/stream`
+      audio.src = streamUrl
+      audio.load()
+      audio.play().catch(console.error)
+    } else {
+      // If no history, just restart current track
+      const audio = audioRef.current
+      if (audio) {
+        audio.currentTime = 0
+      }
+    }
+  }, [])
+
+  const addToQueue = useCallback((track: Track) => {
+    setQueue(prev => [...prev, track])
+  }, [])
+
+  const playNext = useCallback((track: Track) => {
+    setQueue(prev => [track, ...prev])
+  }, [])
+
+  const clearQueue = useCallback(() => {
+    setQueue([])
+  }, [])
+
+  // Ref for nextTrack to be used in event listener
+  const nextTrackRef = useRef(nextTrack)
+  useEffect(() => { nextTrackRef.current = nextTrack }, [nextTrack])
 
   // Initialize audio element
   useEffect(() => {
@@ -72,8 +188,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
 
     const handleEnded = () => {
-      setIsPlaying(false)
-      setCurrentTime(0)
+      // Use ref to call nextTrack to avoid stale closure or dependency issues
+      if (queueRef.current.length > 0) {
+        nextTrackRef.current()
+      } else {
+        setIsPlaying(false)
+        setCurrentTime(0)
+      }
     }
 
     const handlePlay = () => {
@@ -119,33 +240,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const playTrack = useCallback((track: Track) => {
-    // Check authentication before playing
-    if (!isAuthenticated()) {
-      router.push('/login')
-      return
-    }
 
-    const audio = audioRef.current
-    if (!audio) return
-
-    setIsLoading(true)
-    setCurrentTrack(track)
-    
-    recordListen(track.id).catch(() => {
-      // Silently fail - don't log errors for listen recording
-    })
-    
-    // Use the streaming endpoint
-    const streamUrl = `${BASE_URL}/api/tracks/${track.id}/stream`
-    audio.src = streamUrl
-    audio.load()
-    
-    audio.play().catch((error) => {
-      console.error('Failed to play:', error)
-      setIsLoading(false)
-    })
-  }, [router])
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
@@ -221,6 +316,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         volume,
         isMuted,
         isLoading,
+        queue,
         playTrack,
         togglePlay,
         pause,
@@ -229,6 +325,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setVolume,
         toggleMute,
         stop,
+        addToQueue,
+        playNext,
+        nextTrack,
+        previousTrack,
+        clearQueue,
       }}
     >
       {children}
