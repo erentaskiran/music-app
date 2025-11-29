@@ -38,6 +38,8 @@ export function MusicPlayerBar() {
     seek,
     setVolume,
     toggleMute,
+    nextTrack,
+    previousTrack,
   } = usePlayer()
 
   // Don't render if no track is selected
@@ -117,7 +119,7 @@ export function MusicPlayerBar() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              disabled
+              onClick={previousTrack}
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -144,7 +146,7 @@ export function MusicPlayerBar() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              disabled
+              onClick={nextTrack}
             >
               <SkipForward className="h-4 w-4" />
             </Button>

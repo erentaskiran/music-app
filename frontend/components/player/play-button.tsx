@@ -7,11 +7,12 @@ import { Track } from '@/lib/types'
 
 interface PlayButtonProps {
   track: Track
+  queue?: Track[]
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
-export function PlayButton({ track, size = 'md', className = '' }: PlayButtonProps) {
+export function PlayButton({ track, queue, size = 'md', className = '' }: PlayButtonProps) {
   const { currentTrack, isPlaying, isLoading, playTrack, togglePlay } = usePlayer()
 
   const isCurrentTrack = currentTrack?.id === track.id
@@ -24,7 +25,7 @@ export function PlayButton({ track, size = 'md', className = '' }: PlayButtonPro
     if (isCurrentTrack) {
       togglePlay()
     } else {
-      playTrack(track)
+      playTrack(track, queue)
     }
   }
 

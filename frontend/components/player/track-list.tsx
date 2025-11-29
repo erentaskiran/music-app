@@ -57,7 +57,7 @@ export function TrackList({ tracks }: TrackListProps) {
                 )}
               </span>
               <div className="hidden group-hover:block">
-                <PlayButton track={track} size="sm" />
+                <PlayButton track={track} queue={tracks.slice(index + 1)} size="sm" />
               </div>
             </div>
 
