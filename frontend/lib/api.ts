@@ -31,7 +31,7 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
 
     if (!response.ok) {
         let errorCode = 'INTERNAL_SERVER_ERROR'
-        let errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.'
+        let errorMessage = 'An error occurred. Please try again.'
 
         try {
             const errorData = await response.json()
