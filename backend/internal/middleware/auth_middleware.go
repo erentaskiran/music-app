@@ -29,6 +29,31 @@ func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
 			return
 		}
 		ctx := WithUserID(r.Context(), claims.UserID)
+		ctx = WithUserRole(ctx, claims.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// RequireRole returns a middleware that checks if the user has the required role
+func (m *AuthMiddleware) RequireRole(role string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userRole, ok := GetUserRole(r.Context())
+			if !ok || userRole != role {
+				http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireAdmin is a convenience middleware that requires the admin role
+func (m *AuthMiddleware) RequireAdmin(next http.Handler) http.Handler {
+	return m.RequireRole("admin")(next)
+}
+
+// RequireUser is a convenience middleware that requires the user role
+func (m *AuthMiddleware) RequireUser(next http.Handler) http.Handler {
+	return m.RequireRole("user")(next)
 }

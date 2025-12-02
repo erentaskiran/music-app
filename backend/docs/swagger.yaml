@@ -57,6 +57,8 @@ definitions:
         type: string
       password:
         type: string
+      role:
+        type: string
       username:
         type: string
     type: object
@@ -363,7 +365,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Registers a new user
+      description: Registers a new user. Set role to "admin" for admin registration.
       parameters:
       - description: User Registration
         in: body
@@ -379,6 +381,47 @@ paths:
           schema:
             $ref: '#/definitions/models.RegisterRequest'
         "400":
+          description: Missing required fields
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Email or username already exists
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register User
+      tags:
+      - Auth
+  /api/search:
+    get:
+      description: Search for tracks by title, artist, or genre
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Number of tracks to return (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.TrackWithArtist'
+            type: array
+        "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
@@ -386,9 +429,9 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-      summary: Register User
+      summary: Search tracks
       tags:
-      - Auth
+      - Tracks
   /api/tracks:
     get:
       description: Retrieves a list of all published tracks with artist information

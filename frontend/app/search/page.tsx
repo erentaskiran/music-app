@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
 import { searchTracks } from "@/lib/api"
 import { Track } from "@/lib/types"
 import { usePlayer } from "@/contexts/player-context"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Play, Pause, Heart, MoreHorizontal, ListPlus, PlayCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,10 +21,20 @@ import {
 
 function SearchResults() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const query = searchParams.get("q")
   const [results, setResults] = useState<Track[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const { playTrack, currentTrack, isPlaying, togglePlay, addToQueue, playNext } = usePlayer()
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth()
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && isAdmin) {
+      toast.info("Admins should use the admin dashboard")
+      router.push("/admin/dashboard")
+    }
+  }, [isAuthenticated, isAdmin, authLoading, router])
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -50,6 +61,15 @@ function SearchResults() {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
+
+  // Show loading while checking auth
+  if (authLoading || (isAuthenticated && isAdmin)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (

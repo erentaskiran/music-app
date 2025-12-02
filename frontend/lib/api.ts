@@ -1,4 +1,6 @@
 import Cookies from 'js-cookie'
+import type { JWTPayload, UserRole } from './types'
+import { ApiError, getErrorMessage } from './errors'
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/api`
 
@@ -28,30 +30,32 @@ export async function makeRequest(url: string, options: RequestOptions = {}) {
     const response = await fetch(fullUrl, config)
 
     if (!response.ok) {
-        // Try to get error message from response
-        let errorMessage = 'An error occurred. Please try again.'
+        let errorCode = 'INTERNAL_SERVER_ERROR'
+        let errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.'
 
         try {
             const errorData = await response.json()
-            errorMessage = errorData.message || errorData.error || errorMessage
+            errorCode = errorData.error_code || errorCode
+            errorMessage = getErrorMessage(errorCode)
         } catch {
-            // If response is not JSON, use status-based messages
+            // If response is not JSON, use status-based error codes
             if (response.status === 400) {
-                errorMessage = 'Invalid request. Please check your input.'
+                errorCode = 'BAD_REQUEST'
             } else if (response.status === 401) {
-                errorMessage = 'Invalid credentials. Please try again.'
+                errorCode = 'UNAUTHORIZED'
             } else if (response.status === 403) {
-                errorMessage = 'You do not have permission to perform this action.'
+                errorCode = 'FORBIDDEN'
             } else if (response.status === 404) {
-                errorMessage = 'The requested resource was not found.'
+                errorCode = 'NOT_FOUND'
             } else if (response.status === 409) {
-                errorMessage = 'This resource already exists.'
+                errorCode = 'USER_ALREADY_EXISTS'
             } else if (response.status >= 500) {
-                errorMessage = 'Server error. Please try again later.'
+                errorCode = 'INTERNAL_SERVER_ERROR'
             }
+            errorMessage = getErrorMessage(errorCode)
         }
 
-        throw new Error(errorMessage)
+        throw new ApiError(errorCode, errorMessage, response.status)
     }
 
     return response.json()
@@ -134,7 +138,7 @@ export async function makeAuthenticatedRequest(url: string, options: RequestOpti
 
             if (!newToken) {
                 // Refresh failed, throw error to redirect to login
-                throw new Error('Session expired. Please login again.')
+                throw new ApiError('TOKEN_EXPIRED', getErrorMessage('TOKEN_EXPIRED'), 401)
             }
 
             const retryHeaders: Record<string, string> = {
@@ -157,38 +161,36 @@ export async function makeAuthenticatedRequest(url: string, options: RequestOpti
             )
 
             if (!retryResponse.ok) {
-                // Get user-friendly error message
-                let errorMessage = 'An error occurred. Please try again.'
+                let errorCode = 'INTERNAL_SERVER_ERROR'
                 try {
                     const errorData = await retryResponse.json()
-                    errorMessage = errorData.message || errorData.error || errorMessage
+                    errorCode = errorData.error_code || errorCode
                 } catch {
                     if (retryResponse.status === 403) {
-                        errorMessage = 'You do not have permission to access this resource.'
+                        errorCode = 'FORBIDDEN'
                     } else if (retryResponse.status >= 500) {
-                        errorMessage = 'Server error. Please try again later.'
+                        errorCode = 'INTERNAL_SERVER_ERROR'
                     }
                 }
-                throw new Error(errorMessage)
+                throw new ApiError(errorCode, getErrorMessage(errorCode), retryResponse.status)
             }
 
             return retryResponse.json()
         }
 
         if (!response.ok) {
-            // Get user-friendly error message
-            let errorMessage = 'An error occurred. Please try again.'
+            let errorCode = 'INTERNAL_SERVER_ERROR'
             try {
                 const errorData = await response.json()
-                errorMessage = errorData.message || errorData.error || errorMessage
+                errorCode = errorData.error_code || errorCode
             } catch {
                 if (response.status === 403) {
-                    errorMessage = 'You do not have permission to access this resource.'
+                    errorCode = 'FORBIDDEN'
                 } else if (response.status >= 500) {
-                    errorMessage = 'Server error. Please try again later.'
+                    errorCode = 'INTERNAL_SERVER_ERROR'
                 }
             }
-            throw new Error(errorMessage)
+            throw new ApiError(errorCode, getErrorMessage(errorCode), response.status)
         }
 
         return response.json()
@@ -211,6 +213,7 @@ export interface RegisterCredentials {
     email: string
     username: string
     password: string
+    role?: 'user' | 'admin'
 }
 
 export interface AuthResponse {
@@ -277,6 +280,69 @@ export async function logout(): Promise<void> {
  */
 export function isAuthenticated(): boolean {
     return !!Cookies.get('jwt')
+}
+
+/**
+ * Decodes a JWT token without verifying the signature
+ * Note: This is safe for client-side use as the server validates the token
+ */
+export function decodeJWT(token: string): JWTPayload | null {
+    try {
+        const parts = token.split('.')
+        if (parts.length !== 3) {
+            return null
+        }
+        const payload = parts[1]
+        const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+        return JSON.parse(decoded) as JWTPayload
+    } catch {
+        return null
+    }
+}
+
+/**
+ * Gets the current user's role from the JWT token
+ */
+export function getUserRole(): UserRole | null {
+    const token = Cookies.get('jwt')
+    if (!token) {
+        return null
+    }
+    const payload = decodeJWT(token)
+    return payload?.role ?? null
+}
+
+/**
+ * Gets the current user info from the JWT token
+ */
+export function getCurrentUser(): { id: number; email: string; role: UserRole } | null {
+    const token = Cookies.get('jwt')
+    if (!token) {
+        return null
+    }
+    const payload = decodeJWT(token)
+    if (!payload) {
+        return null
+    }
+    return {
+        id: payload.userId,
+        email: payload.email,
+        role: payload.role,
+    }
+}
+
+/**
+ * Checks if the current user has admin role
+ */
+export function isAdmin(): boolean {
+    return getUserRole() === 'admin'
+}
+
+/**
+ * Checks if the current user has user role
+ */
+export function isUser(): boolean {
+    return getUserRole() === 'user'
 }
 
 /**

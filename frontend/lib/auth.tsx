@@ -2,7 +2,8 @@
 
 import { useEffect, useCallback, useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
-import { isAuthenticated } from "./api"
+import { isAuthenticated, getUserRole } from "./api"
+import type { UserRole } from "./types"
 
 // Subscribe function for useSyncExternalStore (no-op since auth doesn't change externally)
 const subscribe = () => () => {}
@@ -10,6 +11,7 @@ const subscribe = () => () => {}
 // Server snapshot always returns false to avoid hydration mismatch
 // This ensures server and initial client render match
 const getServerSnapshot = () => false
+const getServerRoleSnapshot = (): UserRole | null => null
 
 /**
  * Higher-Order Component (HOC) to protect routes
@@ -48,6 +50,98 @@ export function withAuth<P extends object>(
 }
 
 /**
+ * Higher-Order Component (HOC) to protect admin routes
+ * Redirects non-admin users to the appropriate page
+ */
+export function withAdminAuth<P extends object>(
+  Component: React.ComponentType<P>
+): React.FC<P> {
+  return function AdminProtectedRoute(props: P) {
+    const router = useRouter()
+    const [isChecking, setIsChecking] = useState(true)
+    
+    const isAuthed = useSyncExternalStore(
+      subscribe,
+      isAuthenticated,
+      getServerSnapshot
+    )
+    
+    const userRole = useSyncExternalStore(
+      subscribe,
+      getUserRole,
+      getServerRoleSnapshot
+    )
+
+    useEffect(() => {
+      setIsChecking(false)
+      
+      if (!isAuthed) {
+        router.push("/admin/login")
+        return
+      }
+      
+      if (userRole !== 'admin') {
+        // User is authenticated but not an admin, redirect to user home
+        router.push("/")
+      }
+    }, [router, isAuthed, userRole])
+
+    // Show nothing while checking auth or if not admin
+    if (isChecking || !isAuthed || userRole !== 'admin') {
+      return null
+    }
+
+    return <Component {...props} />
+  }
+}
+
+/**
+ * Higher-Order Component (HOC) to protect user routes
+ * Redirects admin users to the admin dashboard
+ */
+export function withUserAuth<P extends object>(
+  Component: React.ComponentType<P>
+): React.FC<P> {
+  return function UserProtectedRoute(props: P) {
+    const router = useRouter()
+    const [isChecking, setIsChecking] = useState(true)
+    
+    const isAuthed = useSyncExternalStore(
+      subscribe,
+      isAuthenticated,
+      getServerSnapshot
+    )
+    
+    const userRole = useSyncExternalStore(
+      subscribe,
+      getUserRole,
+      getServerRoleSnapshot
+    )
+
+    useEffect(() => {
+      setIsChecking(false)
+      
+      if (!isAuthed) {
+        router.push("/login")
+        return
+      }
+      
+      if (userRole === 'admin') {
+        // Admin users should not access user routes
+        router.push("/admin/dashboard")
+      }
+    }, [router, isAuthed, userRole])
+
+    // Show nothing while checking auth or if admin
+    if (isChecking || !isAuthed || userRole === 'admin') {
+      return null
+    }
+
+    return <Component {...props} />
+  }
+}
+
+/**
  * Hook to check authentication status and require auth for actions
  * Can be used in components to conditionally render content or require login
  * Uses useSyncExternalStore to avoid hydration mismatch
@@ -70,6 +164,12 @@ export function useAuth() {
     isAuthenticated,
     getServerSnapshot
   )
+  
+  const userRole = useSyncExternalStore(
+    subscribe,
+    getUserRole,
+    getServerRoleSnapshot
+  )
 
   // isLoading is true until we've mounted on the client
   // This ensures server render and initial client render both show loading state
@@ -86,6 +186,38 @@ export function useAuth() {
     }
     return true
   }, [isAuthed, router])
+
+  /**
+   * Redirects to admin login if not authenticated as admin
+   * @returns true if admin, false if redirected
+   */
+  const requireAdmin = useCallback(() => {
+    if (!isAuthed) {
+      router.push("/admin/login")
+      return false
+    }
+    if (userRole !== 'admin') {
+      router.push("/")
+      return false
+    }
+    return true
+  }, [isAuthed, userRole, router])
+
+  /**
+   * Redirects to login if not authenticated as user
+   * @returns true if user, false if redirected
+   */
+  const requireUser = useCallback(() => {
+    if (!isAuthed) {
+      router.push("/login")
+      return false
+    }
+    if (userRole === 'admin') {
+      router.push("/admin/dashboard")
+      return false
+    }
+    return true
+  }, [isAuthed, userRole, router])
 
   /**
    * Wraps an action to require authentication
@@ -105,7 +237,12 @@ export function useAuth() {
   return {
     isAuthenticated: isAuthed,
     isLoading,
+    role: userRole,
+    isAdmin: userRole === 'admin',
+    isUser: userRole === 'user',
     requireAuth,
+    requireAdmin,
+    requireUser,
     withAuthCheck,
   }
 }

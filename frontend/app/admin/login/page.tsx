@@ -19,7 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { toast } from "sonner"
-import { login } from "@/lib/api"
+import { login, getUserRole } from "@/lib/api"
+import { ApiError } from "@/lib/errors"
 import Link from "next/link"
 
 const loginSchema = z.object({
@@ -51,6 +52,16 @@ export default function AdminLogin() {
         password: data.password,
       })
       
+      // Check user role after successful login
+      const role = getUserRole()
+      
+      if (role !== 'admin') {
+        // User is not an admin, redirect to user home with error
+        toast.error("Access denied. Admin privileges required.")
+        router.push("/")
+        return
+      }
+      
       // Show success message
       toast.success("Login successful!")
       
@@ -58,7 +69,11 @@ export default function AdminLogin() {
       router.push("/admin/dashboard")
     } catch (error) {
       // Show error message
-      toast.error(error instanceof Error ? error.message : "Invalid credentials. Please try again.")
+      if (error instanceof ApiError) {
+        toast.error(error.message)
+      } else {
+        toast.error("An error occurred. Please try again.")
+      }
       console.error("Login error:", error)
     } finally {
       setIsLoading(false)

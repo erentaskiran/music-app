@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form"
 import { toast } from "sonner"
 import { register } from "@/lib/api"
+import { ApiError } from "@/lib/errors"
 import Link from "next/link"
 
 const registerSchema = z.object({
@@ -61,7 +62,11 @@ export default function RegisterPage() {
       toast.success("Account created! Please sign in.")
       router.push("/login")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Registration failed. Please try again.")
+      if (error instanceof ApiError) {
+        toast.error(error.message)
+      } else {
+        toast.error("An error occurred. Please try again.")
+      }
       console.error("Registration error:", error)
     } finally {
       setIsLoading(false)

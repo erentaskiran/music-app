@@ -24,7 +24,6 @@ import (
 )
 
 var (
-	// ValidAudioTypes defines the allowed content types for audio file uploads
 	ValidAudioTypes = []string{"audio/mpeg", "audio/mp3", "audio/wav", "audio/flac"}
 	// MaxUploadSize defines the maximum file size for uploads (10MB)
 	MaxUploadSize int64 = 10 << 20
