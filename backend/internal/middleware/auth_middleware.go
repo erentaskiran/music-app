@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	utils "music-app/backend/internal/utils"
+	"music-app/backend/pkg/api_errors"
 )
 
 type AuthMiddleware struct {
@@ -19,13 +20,13 @@ func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := r.Header.Get("Authorization")
 		if h == "" || !strings.HasPrefix(h, "Bearer ") {
-			http.Error(w, "missing bearer token", http.StatusUnauthorized)
+			utils.JSONError(w, api_errors.ErrUnauthorized, "Missing bearer token", http.StatusUnauthorized)
 			return
 		}
 		tokenString := strings.TrimPrefix(h, "Bearer ")
 		claims, err := m.JWTManager.ParseAccessToken(tokenString)
 		if err != nil {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
+			utils.JSONError(w, api_errors.ErrInvalidToken, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 		ctx := WithUserID(r.Context(), claims.UserID)
@@ -40,7 +41,7 @@ func (m *AuthMiddleware) RequireRole(role string) func(http.Handler) http.Handle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userRole, ok := GetUserRole(r.Context())
 			if !ok || userRole != role {
-				http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+				utils.JSONError(w, api_errors.ErrForbidden, "Insufficient permissions", http.StatusForbidden)
 				return
 			}
 			next.ServeHTTP(w, r)

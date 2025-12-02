@@ -7,7 +7,7 @@ import (
 
 func (r *Repository) CreateUser(user *models.RegisterRequest) error {
 	role := user.Role
-	if role == "" {
+	if role != "admin" {
 		role = "user"
 	}
 	query := "INSERT INTO users (email, username, password_hash, role) VALUES ($1, $2, $3, $4)"

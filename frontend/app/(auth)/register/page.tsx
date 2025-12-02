@@ -63,7 +63,7 @@ export default function RegisterPage() {
       router.push("/login")
     } catch (error) {
       if (error instanceof ApiError) {
-        toast.error(error.message)
+        toast.error(error.getUserMessage())
       } else {
         toast.error("An error occurred. Please try again.")
       }

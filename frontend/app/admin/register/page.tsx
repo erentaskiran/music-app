@@ -69,7 +69,7 @@ export default function AdminRegister() {
     } catch (error) {
       // Show error message
       if (error instanceof ApiError) {
-        toast.error(error.message)
+        toast.error(error.getUserMessage())
       } else {
         toast.error("An error occurred. Please try again.")
       }
