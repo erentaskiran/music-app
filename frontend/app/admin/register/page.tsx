@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form"
 import { toast } from "sonner"
 import { register } from "@/lib/api"
+import { ApiError } from "@/lib/errors"
 import Link from "next/link"
 
 const registerSchema = z.object({
@@ -52,21 +53,26 @@ export default function AdminRegister() {
     setIsLoading(true)
     
     try {
-      // Call the register API with credentials
+      // Call the register API with credentials and admin role
       await register({
         email: data.email,
         username: data.username,
         password: data.password,
+        role: 'admin',
       })
       
       // Show success message
-      toast.success("Registration successful! Please log in.")
+      toast.success("Account created! Please log in.")
       
       // Redirect to login page
       router.push("/admin/login")
     } catch (error) {
       // Show error message
-      toast.error(error instanceof Error ? error.message : "Registration failed. Please try again.")
+      if (error instanceof ApiError) {
+        toast.error(error.getUserMessage())
+      } else {
+        toast.error("An error occurred. Please try again.")
+      }
       console.error("Registration error:", error)
     } finally {
       setIsLoading(false)

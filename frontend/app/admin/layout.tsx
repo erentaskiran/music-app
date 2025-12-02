@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode, useState } from "react"
+import { ReactNode, useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,7 +17,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { logout } from "@/lib/api"
+import { logout, getCurrentUser } from "@/lib/api"
+import { useAuth } from "@/lib/auth"
 import { toast } from "sonner"
 
 const navItems = [
@@ -31,6 +32,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const { isAuthenticated, isAdmin, isLoading } = useAuth()
+
+  // Skip auth check for login and register pages
+  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/register"
+
+  useEffect(() => {
+    if (isLoading || isAuthPage) return
+
+    if (!isAuthenticated) {
+      router.push("/admin/login")
+      return
+    }
+
+    if (!isAdmin) {
+      // User is authenticated but not an admin, redirect to user home
+      toast.error("Access denied. Admin privileges required.")
+      router.push("/")
+    }
+  }, [isAuthenticated, isAdmin, isLoading, router, isAuthPage])
 
   const handleLogout = async () => {
     try {
@@ -42,6 +62,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       console.error("Logout error:", error)
     }
   }
+
+  // Show nothing while checking auth (except for auth pages)
+  if (!isAuthPage && (isLoading || !isAuthenticated || !isAdmin)) {
+    return (
+      <div className="min-h-screen bg-[#0c0c0d] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    )
+  }
+
+  // For auth pages, render without the admin layout
+  if (isAuthPage) {
+    return <>{children}</>
+  }
+
+  const currentUser = getCurrentUser()
 
   return (
     <div className="min-h-screen bg-[#0c0c0d] text-white font-inter">
@@ -109,12 +145,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <div className="flex items-center gap-3 px-4 py-3 mb-2">
                   <Avatar className="w-8 h-8">
                     <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white">
-                      A
+                      {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="text-sm font-medium">Admin</p>
-                    <p className="text-xs text-gray-400">admin@musicly.com</p>
+                    <p className="text-xs text-gray-400">{currentUser?.email || 'admin@musicly.com'}</p>
                   </div>
                 </div>
                 
@@ -155,7 +191,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-4">
               <Avatar className="w-9 h-9">
                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
-                  A
+                  {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
             </div>

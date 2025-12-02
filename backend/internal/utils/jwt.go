@@ -23,14 +23,18 @@ func NewJWTManager(secret string, accessTokenExpMinutes int, refreshTokenExpDays
 }
 
 type AccessTokenClaims struct {
-	UserID int `json:"userId"`
+	UserID int    `json:"userId"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func (m *JWTManager) CreateAccessToken(userId int) (string, error) {
+func (m *JWTManager) CreateAccessToken(userId int, email string, role string) (string, error) {
 	now := time.Now()
 	claims := AccessTokenClaims{
 		UserID: userId,
+		Email:  email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "music-app-backend",
 			Subject:   strconv.Itoa(userId),
