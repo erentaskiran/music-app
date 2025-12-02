@@ -2,13 +2,13 @@ package auth
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"music-app/backend/internal/models"
 	repository "music-app/backend/internal/repository"
 	utils "music-app/backend/internal/utils"
 	"music-app/backend/pkg/api_errors"
 	"net/http"
+	"strings"
 )
 
 type AuthHandler struct {
@@ -47,7 +47,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	accessToken, err := h.JWTManager.CreateAccessToken(user.ID)
+	accessToken, err := h.JWTManager.CreateAccessToken(user.ID, user.Email, user.Role)
 	if err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating access token", http.StatusInternalServerError)
 		return
@@ -67,14 +67,15 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 
 // RegisterHandler godoc
 // @Summary Register User
-// @Description Registers a new user
+// @Description Registers a new user. Set role to "admin" for admin registration.
 // @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   registerReq body models.RegisterRequest true "User Registration"
 // @Success 201 {object} models.RegisterRequest
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.ErrorResponse "Missing required fields"
+// @Failure 409 {object} utils.ErrorResponse "Email or username already exists"
+// @Failure 500 {object} utils.ErrorResponse "Internal server error"
 // @Router /api/register [post]
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) {
 	var user models.RegisterRequest
@@ -92,8 +93,23 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, req *http.Request) 
 	repo := repository.NewRepository(h.Db)
 	err := repo.CreateUser(&user)
 	if err != nil {
-		fmt.Printf("CRITICAL ERROR: %v\n", err) // Added for debugging
 		slog.Error("Failed to create user", "error", err)
+
+		// Check for duplicate key errors (PostgreSQL error codes)
+		errStr := err.Error()
+		if strings.Contains(errStr, "duplicate key") || strings.Contains(errStr, "unique constraint") {
+			if strings.Contains(errStr, "email") {
+				utils.JSONError(w, api_errors.ErrDuplicateEmail, "Email already exists", http.StatusConflict)
+				return
+			}
+			if strings.Contains(errStr, "username") {
+				utils.JSONError(w, api_errors.ErrDuplicateUsername, "Username already exists", http.StatusConflict)
+				return
+			}
+			utils.JSONError(w, api_errors.ErrUserAlreadyExists, "User already exists", http.StatusConflict)
+			return
+		}
+
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error creating user", http.StatusInternalServerError)
 		return
 	}
@@ -126,7 +142,15 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	newAccessToken, err := h.JWTManager.CreateAccessToken(userID)
+	// Fetch user to get email and role for the new access token
+	repo := repository.NewRepository(h.Db)
+	user, err := repo.GetUserByID(userID)
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error fetching user", http.StatusInternalServerError)
+		return
+	}
+
+	newAccessToken, err := h.JWTManager.CreateAccessToken(user.ID, user.Email, user.Role)
 	if err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error generating access token", http.StatusInternalServerError)
 		return

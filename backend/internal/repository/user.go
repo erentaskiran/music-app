@@ -6,17 +6,21 @@ import (
 )
 
 func (r *Repository) CreateUser(user *models.RegisterRequest) error {
-	query := "INSERT INTO users (email, username, password_hash) VALUES ($1, $2, $3)"
-	_, err := r.Db.Exec(query, user.Email, user.Username, user.Password)
+	role := user.Role
+	if role != "admin" {
+		role = "user"
+	}
+	query := "INSERT INTO users (email, username, password_hash, role) VALUES ($1, $2, $3, $4)"
+	_, err := r.Db.Exec(query, user.Email, user.Username, user.Password, role)
 	return err
 }
 
 func (r *Repository) CheckLogin(email, password string) (*models.User, error) {
-	query := "SELECT id, password_hash FROM users WHERE email=$1"
+	query := "SELECT id, email, password_hash, role FROM users WHERE email=$1"
 	row := r.Db.QueryRow(query, email)
 
 	var user models.User
-	err := row.Scan(&user.ID, &user.PasswordHash)
+	err := row.Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Role)
 	if err != nil || !utils.CheckPasswordHash(password, user.PasswordHash) {
 		return nil, err
 	}

@@ -1,3 +1,25 @@
+export type UserRole = 'user' | 'admin'
+
+export interface User {
+  id: number
+  email: string
+  username: string
+  avatar_url?: string
+  role: UserRole
+}
+
+export interface JWTPayload {
+  userId: number
+  email: string
+  role: UserRole
+  sub: string
+  iss: string
+  aud: string[]
+  iat: number
+  exp: number
+  nbf: number
+}
+
 export interface Track {
   id: number
   title: string
