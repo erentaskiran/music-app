@@ -504,7 +504,7 @@ export async function updatePlaylist(
  * Requires authentication and must be playlist creator
  */
 export async function deletePlaylist(playlistId: number): Promise<void> {
-    return makeAuthenticatedRequest(`/playlists/${playlistId}/tracks/${trackId}`, {
+    return makeAuthenticatedRequest(`/playlists/${playlistId}`, {
         method: 'DELETE',
     })
 }
