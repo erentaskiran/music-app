@@ -138,6 +138,7 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 
 	userID, err := h.JWTManager.ParseRefreshToken(refreshReq.RefreshToken)
 	if err != nil {
+		slog.Error("Failed to parse refresh token", "error", err)
 		utils.JSONError(w, api_errors.ErrInvalidToken, "Invalid refresh token", http.StatusUnauthorized)
 		return
 	}
@@ -146,6 +147,7 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 	repo := repository.NewRepository(h.Db)
 	user, err := repo.GetUserByID(userID)
 	if err != nil {
+		slog.Error("Failed to fetch user during refresh", "userID", userID, "error", err)
 		utils.JSONError(w, api_errors.ErrInternalServer, "Error fetching user", http.StatusInternalServerError)
 		return
 	}

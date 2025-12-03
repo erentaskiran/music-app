@@ -71,6 +71,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         const refreshToken = Cookies.get('refresh_token')
 
         if (!refreshToken) {
+            console.warn('No refresh token found in cookies')
             return null
         }
 
@@ -91,10 +92,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
         return response.access_token
     } catch (error) {
-        // Log error but don't show in console if it's just an expired token
-        if (error instanceof Error && !error.message.includes('401')) {
-            console.error('Token refresh failed:', error)
-        }
+        console.error('Token refresh failed:', error)
         // If refresh fails, clear tokens and redirect to login
         Cookies.remove('jwt')
         Cookies.remove('refresh_token')
