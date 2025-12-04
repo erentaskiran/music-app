@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"log/slog"
+	"music-app/backend/internal/middleware"
 	"music-app/backend/internal/models"
 	repository "music-app/backend/internal/repository"
 	utils "music-app/backend/internal/utils"
@@ -181,5 +182,194 @@ func (h *AuthHandler) RefreshHandler(w http.ResponseWriter, req *http.Request) {
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, req *http.Request) {
 	utils.JSONSuccess(w, models.LogoutResponse{
 		Message: "Logged out successfully",
+	}, http.StatusOK)
+}
+
+// UpdateProfileHandler godoc
+// @Summary Update Profile
+// @Description Updates the user's profile information
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param   updateReq body models.UpdateProfileRequest true "Profile Update Data"
+// @Success 200 {object} models.UpdateProfileResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 409 {object} utils.ErrorResponse
+// @Router /api/profile [put]
+func (h *AuthHandler) UpdateProfileHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var updateReq models.UpdateProfileRequest
+	if utils.DecodeJSONBody(w, req, &updateReq) != nil {
+		return
+	}
+
+	repo := repository.NewRepository(h.Db)
+
+	// Get current user data
+	currentUser, err := repo.GetUserByID(userID)
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrUserNotFound, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Use current values if not provided
+	username := updateReq.Username
+	if username == "" {
+		username = currentUser.Username
+	}
+
+	email := updateReq.Email
+	if email == "" {
+		email = currentUser.Email
+	}
+
+	bio := updateReq.Bio
+	if bio == nil {
+		bio = currentUser.AvatarURL // Using AvatarURL field for bio temporarily
+	}
+
+	// Check if email is being changed and if it's already in use
+	if email != currentUser.Email {
+		exists, err := repo.CheckEmailExists(email, userID)
+		if err != nil {
+			slog.Error("Failed to check email existence", "error", err)
+			utils.JSONError(w, api_errors.ErrInternalServer, "Error checking email", http.StatusInternalServerError)
+			return
+		}
+		if exists {
+			utils.JSONError(w, api_errors.ErrDuplicateEmail, "Email already exists", http.StatusConflict)
+			return
+		}
+	}
+
+	// Check if username is being changed and if it's already in use
+	if username != currentUser.Username {
+		exists, err := repo.CheckUsernameExists(username, userID)
+		if err != nil {
+			slog.Error("Failed to check username existence", "error", err)
+			utils.JSONError(w, api_errors.ErrInternalServer, "Error checking username", http.StatusInternalServerError)
+			return
+		}
+		if exists {
+			utils.JSONError(w, api_errors.ErrDuplicateUsername, "Username already exists", http.StatusConflict)
+			return
+		}
+	}
+
+	// Update profile
+	err = repo.UpdateUserProfile(userID, username, email, bio)
+	if err != nil {
+		slog.Error("Failed to update profile", "error", err)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error updating profile", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, models.UpdateProfileResponse{
+		Message: "Profile updated successfully",
+	}, http.StatusOK)
+}
+
+// ChangePasswordHandler godoc
+// @Summary Change Password
+// @Description Changes the user's password
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param   changeReq body models.ChangePasswordRequest true "Password Change Data"
+// @Success 200 {object} models.UpdateProfileResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Router /api/profile/password [put]
+func (h *AuthHandler) ChangePasswordHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var changeReq models.ChangePasswordRequest
+	if utils.DecodeJSONBody(w, req, &changeReq) != nil {
+		return
+	}
+
+	if changeReq.CurrentPassword == "" || changeReq.NewPassword == "" {
+		utils.JSONError(w, api_errors.ErrMissingFields, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Validate new password strength (at least 8 characters)
+	if len(changeReq.NewPassword) < 8 {
+		utils.JSONError(w, api_errors.ErrWeakPassword, "Password must be at least 8 characters", http.StatusBadRequest)
+		return
+	}
+
+	repo := repository.NewRepository(h.Db)
+
+	// Get current password hash
+	currentHash, err := repo.GetUserPasswordHash(userID)
+	if err != nil {
+		slog.Error("Failed to get password hash", "error", err)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error fetching user", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify current password
+	if !utils.CheckPasswordHash(changeReq.CurrentPassword, currentHash) {
+		utils.JSONError(w, api_errors.ErrInvalidCredentials, "Current password is incorrect", http.StatusUnauthorized)
+		return
+	}
+
+	// Hash new password and update
+	newHash := utils.HashPassword(changeReq.NewPassword)
+	err = repo.UpdateUserPassword(userID, newHash)
+	if err != nil {
+		slog.Error("Failed to update password", "error", err)
+		utils.JSONError(w, api_errors.ErrInternalServer, "Error updating password", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, models.UpdateProfileResponse{
+		Message: "Password changed successfully",
+	}, http.StatusOK)
+}
+
+// GetProfileHandler godoc
+// @Summary Get Profile
+// @Description Gets the current user's profile information
+// @Tags Auth
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} models.UserProfileResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Router /api/profile [get]
+func (h *AuthHandler) GetProfileHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	repo := repository.NewRepository(h.Db)
+	user, err := repo.GetUserByID(userID)
+	if err != nil {
+		slog.Error("Failed to get user profile", "error", err)
+		utils.JSONError(w, api_errors.ErrUserNotFound, "User not found", http.StatusNotFound)
+		return
+	}
+
+	utils.JSONSuccess(w, models.UserProfileResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Username:  user.Username,
+		AvatarURL: user.AvatarURL,
+		Role:      user.Role,
 	}, http.StatusOK)
 }

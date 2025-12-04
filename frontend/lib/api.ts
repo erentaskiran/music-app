@@ -582,3 +582,63 @@ export async function removeTrackFromPlaylist(playlistId: number, trackId: numbe
         method: 'DELETE',
     })
 }
+
+/**
+ * Profile response from API
+ */
+export interface ProfileResponse {
+    id: number
+    email: string
+    username: string
+    avatar_url?: string
+    role: string
+}
+
+/**
+ * Update profile request data
+ */
+export interface UpdateProfileData {
+    username?: string
+    email?: string
+    bio?: string
+}
+
+/**
+ * Change password request data
+ */
+export interface ChangePasswordData {
+    current_password: string
+    new_password: string
+}
+
+/**
+ * Gets the current user's profile
+ * Requires authentication
+ */
+export async function getProfile(): Promise<ProfileResponse> {
+    return makeAuthenticatedRequest('/profile', {
+        method: 'GET',
+    })
+}
+
+/**
+ * Updates the current user's profile
+ * Requires authentication
+ */
+export async function updateProfile(data: UpdateProfileData): Promise<{ message: string }> {
+    return makeAuthenticatedRequest('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })
+}
+
+/**
+ * Changes the current user's password
+ * Requires authentication
+ */
+export async function changePassword(data: ChangePasswordData): Promise<{ message: string }> {
+    return makeAuthenticatedRequest('/profile/password', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })
+}

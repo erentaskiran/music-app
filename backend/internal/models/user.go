@@ -45,3 +45,18 @@ type UserProfileResponse struct {
 type LogoutResponse struct {
 	Message string `json:"message"`
 }
+
+type UpdateProfileRequest struct {
+	Username string  `json:"username,omitempty"`
+	Email    string  `json:"email,omitempty"`
+	Bio      *string `json:"bio,omitempty"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+type UpdateProfileResponse struct {
+	Message string `json:"message"`
+}

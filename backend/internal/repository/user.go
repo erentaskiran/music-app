@@ -53,3 +53,45 @@ func (r *Repository) GetUserByUsername(username string) (*models.User, error) {
 
 	return &user, nil
 }
+
+func (r *Repository) UpdateUserProfile(userID int, username, email string, bio *string) error {
+	query := "UPDATE users SET username=$1, email=$2, avatar_url=$3, updated_at=NOW() WHERE id=$4"
+	_, err := r.Db.Exec(query, username, email, bio, userID)
+	return err
+}
+
+func (r *Repository) UpdateUserPassword(userID int, newPasswordHash string) error {
+	query := "UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2"
+	_, err := r.Db.Exec(query, newPasswordHash, userID)
+	return err
+}
+
+func (r *Repository) GetUserPasswordHash(userID int) (string, error) {
+	query := "SELECT password_hash FROM users WHERE id=$1"
+	row := r.Db.QueryRow(query, userID)
+	var passwordHash string
+	err := row.Scan(&passwordHash)
+	return passwordHash, err
+}
+
+func (r *Repository) CheckEmailExists(email string, excludeUserID int) (bool, error) {
+	query := "SELECT COUNT(*) FROM users WHERE email=$1 AND id!=$2"
+	var count int
+	err := r.Db.QueryRow(query, email, excludeUserID).Scan(&count)
+	return count > 0, err
+}
+
+func (r *Repository) CheckUsernameExists(username string, excludeUserID int) (bool, error) {
+	query := "SELECT COUNT(*) FROM users WHERE username=$1 AND id!=$2"
+	var count int
+	err := r.Db.QueryRow(query, username, excludeUserID).Scan(&count)
+	return count > 0, err
+}
+
+func (r *Repository) GetUserRoleByID(userID int) (string, error) {
+	query := "SELECT role FROM users WHERE id=$1"
+	row := r.Db.QueryRow(query, userID)
+	var role string
+	err := row.Scan(&role)
+	return role, err
+}

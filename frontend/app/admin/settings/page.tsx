@@ -1,17 +1,181 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Settings as SettingsIcon, User, Bell, Shield, Palette } from "lucide-react"
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { withAuth } from "@/lib/auth"
+import { getProfile, updateProfile, changePassword, ProfileResponse } from "@/lib/api"
+import { ApiError } from "@/lib/errors"
 
 function SettingsPage() {
-  const handleSave = () => {
-    toast.success("Settings saved successfully")
+  // Profile state
+  const [profile, setProfile] = useState<ProfileResponse | null>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  
+  // Profile form state
+  const [fullName, setFullName] = useState("")
+  const [email, setEmail] = useState("")
+  const [bio, setBio] = useState("")
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  
+  // Password form state
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
+
+  // Validation errors
+  const [profileErrors, setProfileErrors] = useState<{ fullName?: string; email?: string }>({})
+  const [passwordErrors, setPasswordErrors] = useState<{ current?: string; new?: string; confirm?: string }>({})
+
+  // Fetch profile on mount
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const data = await getProfile()
+        setProfile(data)
+        setFullName(data.username || "")
+        setEmail(data.email || "")
+        setBio(data.avatar_url || "") // Using avatar_url for bio temporarily
+      } catch (error) {
+        console.error("Failed to fetch profile:", error)
+        toast.error("Failed to load profile")
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  // Email validation
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Password strength validation
+  const isStrongPassword = (password: string): boolean => {
+    return password.length >= 8
+  }
+
+  // Validate profile form
+  const validateProfile = (): boolean => {
+    const errors: { fullName?: string; email?: string } = {}
+    
+    if (!fullName.trim()) {
+      errors.fullName = "Full name is required"
+    }
+    
+    if (!email.trim()) {
+      errors.email = "Email is required"
+    } else if (!isValidEmail(email)) {
+      errors.email = "Please enter a valid email address"
+    }
+    
+    setProfileErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Validate password form
+  const validatePassword = (): boolean => {
+    const errors: { current?: string; new?: string; confirm?: string } = {}
+    
+    if (!currentPassword) {
+      errors.current = "Current password is required"
+    }
+    
+    if (!newPassword) {
+      errors.new = "New password is required"
+    } else if (!isStrongPassword(newPassword)) {
+      errors.new = "Password must be at least 8 characters"
+    }
+    
+    if (!confirmPassword) {
+      errors.confirm = "Please confirm your new password"
+    } else if (newPassword !== confirmPassword) {
+      errors.confirm = "Passwords do not match"
+    }
+    
+    setPasswordErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Handle profile save
+  const handleSaveProfile = async () => {
+    if (!validateProfile()) return
+    
+    setIsSavingProfile(true)
+    try {
+      await updateProfile({
+        username: fullName,
+        email: email,
+        bio: bio || undefined,
+      })
+      toast.success("Profile updated successfully")
+      // Refresh profile data
+      const updatedProfile = await getProfile()
+      setProfile(updatedProfile)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === "DUPLICATE_EMAIL") {
+          setProfileErrors({ email: "This email is already in use" })
+        } else if (error.code === "DUPLICATE_USERNAME") {
+          setProfileErrors({ fullName: "This username is already taken" })
+        } else {
+          toast.error(error.getUserMessage())
+        }
+      } else {
+        toast.error("Failed to update profile")
+      }
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  // Handle password change
+  const handleChangePassword = async () => {
+    if (!validatePassword()) return
+    
+    setIsSavingPassword(true)
+    try {
+      await changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      })
+      toast.success("Password changed successfully")
+      // Clear password fields
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      setPasswordErrors({})
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === "INVALID_CREDENTIALS") {
+          setPasswordErrors({ current: "Current password is incorrect" })
+        } else if (error.code === "WEAK_PASSWORD") {
+          setPasswordErrors({ new: "Password is too weak. Use at least 8 characters." })
+        } else {
+          toast.error(error.getUserMessage())
+        }
+      } else {
+        toast.error("Failed to change password")
+      }
+    } finally {
+      setIsSavingPassword(false)
+    }
+  }
+
+  if (isLoadingProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    )
   }
 
   return (
@@ -57,9 +221,21 @@ function SettingsPage() {
                 </Label>
                 <Input
                   id="name"
-                  defaultValue="Admin User"
-                  className="bg-[#1a1a1a] border-gray-700 text-white"
+                  value={fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value)
+                    if (profileErrors.fullName) {
+                      setProfileErrors({ ...profileErrors, fullName: undefined })
+                    }
+                  }}
+                  className={`bg-[#1a1a1a] border-gray-700 text-white ${
+                    profileErrors.fullName ? "border-red-500" : ""
+                  }`}
+                  placeholder="Enter your full name"
                 />
+                {profileErrors.fullName && (
+                  <p className="text-sm text-red-500">{profileErrors.fullName}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-200">
@@ -68,9 +244,21 @@ function SettingsPage() {
                 <Input
                   id="email"
                   type="email"
-                  defaultValue="admin@musicly.com"
-                  className="bg-[#1a1a1a] border-gray-700 text-white"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (profileErrors.email) {
+                      setProfileErrors({ ...profileErrors, email: undefined })
+                    }
+                  }}
+                  className={`bg-[#1a1a1a] border-gray-700 text-white ${
+                    profileErrors.email ? "border-red-500" : ""
+                  }`}
+                  placeholder="Enter your email"
                 />
+                {profileErrors.email && (
+                  <p className="text-sm text-red-500">{profileErrors.email}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -79,15 +267,25 @@ function SettingsPage() {
               </Label>
               <Input
                 id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself"
                 className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
               />
             </div>
             <Button
-              onClick={handleSave}
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
             >
-              Save Changes
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -114,9 +312,21 @@ function SettingsPage() {
               <Input
                 id="current-password"
                 type="password"
+                value={currentPassword}
+                onChange={(e) => {
+                  setCurrentPassword(e.target.value)
+                  if (passwordErrors.current) {
+                    setPasswordErrors({ ...passwordErrors, current: undefined })
+                  }
+                }}
                 placeholder="••••••••"
-                className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                  passwordErrors.current ? "border-red-500" : ""
+                }`}
               />
+              {passwordErrors.current && (
+                <p className="text-sm text-red-500">{passwordErrors.current}</p>
+              )}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -126,9 +336,21 @@ function SettingsPage() {
                 <Input
                   id="new-password"
                   type="password"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value)
+                    if (passwordErrors.new) {
+                      setPasswordErrors({ ...passwordErrors, new: undefined })
+                    }
+                  }}
                   placeholder="••••••••"
-                  className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                  className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                    passwordErrors.new ? "border-red-500" : ""
+                  }`}
                 />
+                {passwordErrors.new && (
+                  <p className="text-sm text-red-500">{passwordErrors.new}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password" className="text-gray-200">
@@ -137,16 +359,36 @@ function SettingsPage() {
                 <Input
                   id="confirm-password"
                   type="password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (passwordErrors.confirm) {
+                      setPasswordErrors({ ...passwordErrors, confirm: undefined })
+                    }
+                  }}
                   placeholder="••••••••"
-                  className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                  className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                    passwordErrors.confirm ? "border-red-500" : ""
+                  }`}
                 />
+                {passwordErrors.confirm && (
+                  <p className="text-sm text-red-500">{passwordErrors.confirm}</p>
+                )}
               </div>
             </div>
             <Button
-              onClick={handleSave}
+              onClick={handleChangePassword}
+              disabled={isSavingPassword}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
             >
-              Update Password
+              {isSavingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Password"
+              )}
             </Button>
           </CardContent>
         </Card>
