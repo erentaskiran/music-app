@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -444,7 +446,7 @@ func (r *Router) DeleteTrackHandler(w http.ResponseWriter, req *http.Request) {
 	// Verify ownership
 	ownerID, err := repo.GetTrackOwner(trackID)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
 			return
 		}
@@ -534,12 +536,17 @@ func (r *Router) UpdateTrackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(updateData.Title) > 200 {
+		utils.JSONError(w, api_errors.ErrBadRequest, "title must be 200 characters or less", http.StatusBadRequest)
+		return
+	}
+
 	repo := repository.NewRepository(r.Db)
 
 	// Verify ownership
 	ownerID, err := repo.GetTrackOwner(trackID)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
 			return
 		}
