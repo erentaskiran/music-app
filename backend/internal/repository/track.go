@@ -157,3 +157,101 @@ func (r *Repository) SearchTracks(query string, limit, offset int) ([]models.Tra
 	}
 	return tracks, nil
 }
+
+// GetTracksByArtistID retrieves all tracks uploaded by a specific artist
+func (r *Repository) GetTracksByArtistID(artistID, limit, offset int) ([]models.TrackWithArtist, error) {
+	query := `
+		SELECT t.id, t.title, t.artist_id, t.file_url, 
+		       COALESCE(t.duration, 0), COALESCE(t.cover_image_url, ''), 
+		       COALESCE(t.genre, ''), COALESCE(t.lyrics, ''), 
+		       COALESCE(t.quality_bitrate, 0), COALESCE(t.status, 'published'), 
+		       t.created_at, t.updated_at,
+		       u.username as artist_name
+		FROM tracks t
+		LEFT JOIN users u ON t.artist_id = u.id
+		WHERE t.artist_id = $1
+		ORDER BY t.created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.Db.Query(query, artistID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tracks []models.TrackWithArtist
+	for rows.Next() {
+		var track models.TrackWithArtist
+		err := rows.Scan(
+			&track.ID,
+			&track.Title,
+			&track.ArtistID,
+			&track.FileURL,
+			&track.Duration,
+			&track.CoverImageURL,
+			&track.Genre,
+			&track.Lyrics,
+			&track.QualityBitrate,
+			&track.Status,
+			&track.CreatedAt,
+			&track.UpdatedAt,
+			&track.ArtistName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, track)
+	}
+
+	return tracks, nil
+}
+
+// UpdateTrack updates a track's details (title, genre, cover_image_url)
+func (r *Repository) UpdateTrack(trackID int, title string, genre, coverImageURL *string) error {
+	query := `
+		UPDATE tracks 
+		SET title = $1, genre = $2, cover_image_url = $3, updated_at = NOW()
+		WHERE id = $4
+	`
+	result, err := r.Db.Exec(query, title, genre, coverImageURL, trackID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// DeleteTrack deletes a track from the database
+func (r *Repository) DeleteTrack(trackID int) error {
+	query := `DELETE FROM tracks WHERE id = $1`
+	result, err := r.Db.Exec(query, trackID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// GetTrackOwner returns the artist_id (owner) of a track
+func (r *Repository) GetTrackOwner(trackID int) (int, error) {
+	var artistID int
+	query := `SELECT artist_id FROM tracks WHERE id = $1`
+	err := r.Db.QueryRow(query, trackID).Scan(&artistID)
+	if err != nil {
+		return 0, err
+	}
+	return artistID, nil
+}

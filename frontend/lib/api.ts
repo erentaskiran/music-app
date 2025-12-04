@@ -382,6 +382,40 @@ export async function getTracks(limit = 50, offset = 0): Promise<TrackResponse[]
 }
 
 /**
+ * Fetches tracks uploaded by the current user
+ */
+export async function getMyTracks(limit = 50, offset = 0): Promise<TrackResponse[]> {
+    return makeAuthenticatedRequest(`/my-tracks?limit=${limit}&offset=${offset}`, {
+        method: 'GET',
+    })
+}
+
+/**
+ * Deletes a track owned by the current user
+ */
+export async function deleteTrack(trackId: number): Promise<void> {
+    return makeAuthenticatedRequest(`/my-tracks/${trackId}`, {
+        method: 'DELETE',
+    })
+}
+
+/**
+ * Updates a track's details
+ */
+export interface UpdateTrackData {
+    title: string
+    genre?: string | null
+    cover_image_url?: string | null
+}
+
+export async function updateTrack(trackId: number, data: UpdateTrackData): Promise<TrackResponse> {
+    return makeAuthenticatedRequest(`/my-tracks/${trackId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })
+}
+
+/**
  * Gets the streaming URL for a track
  */
 export function getTrackStreamUrl(trackId: number): string {

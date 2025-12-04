@@ -79,3 +79,5 @@ logs
 # Temporary files
 tmp/
 temp/
+
+copilot-instructions.md

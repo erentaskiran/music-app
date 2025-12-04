@@ -16,12 +16,28 @@ function MusicUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [musicTitle, setMusicTitle] = useState("")
   const [genre, setGenre] = useState("")
+  const [duration, setDuration] = useState<number>(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = (file: File) => {
+  const getAudioDuration = (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+      const audio = new Audio()
+      audio.addEventListener("loadedmetadata", () => {
+        resolve(Math.round(audio.duration))
+        URL.revokeObjectURL(audio.src)
+      })
+      audio.addEventListener("error", () => {
+        resolve(0)
+        URL.revokeObjectURL(audio.src)
+      })
+      audio.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handleFileSelect = async (file: File) => {
     const validTypes = ["audio/mpeg", "audio/wav", "audio/flac", "audio/mp3"]
     const validExtensions = [".mp3", ".wav", ".flac"]
     
@@ -32,6 +48,11 @@ function MusicUploadPage() {
     if (validTypes.includes(file.type) || hasValidExtension) {
       setSelectedFile(file)
       setUploadSuccess(false)
+      
+      // Get audio duration
+      const audioDuration = await getAudioDuration(file)
+      setDuration(audioDuration)
+      
       // Auto-fill title with filename (without extension)
       if (!musicTitle) {
         setMusicTitle(file.name.replace(/\.[^/.]+$/, ""))
@@ -89,6 +110,9 @@ function MusicUploadPage() {
       formData.append("file", selectedFile)
       formData.append("title", musicTitle)
       formData.append("genre", genre)
+      if (duration > 0) {
+        formData.append("duration", duration.toString())
+      }
 
       await makeAuthenticatedRequest("/tracks/upload", {
         method: "POST",
@@ -107,6 +131,7 @@ function MusicUploadPage() {
         setSelectedFile(null)
         setMusicTitle("")
         setGenre("")
+        setDuration(0)
         setUploadSuccess(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
@@ -193,9 +218,15 @@ function MusicUploadPage() {
                     <p className="text-white font-medium truncate">
                       {selectedFile.name}
                     </p>
-                    <p className="text-sm text-gray-400">
-                      {formatFileSize(selectedFile.size)}
-                    </p>
+                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <span>{formatFileSize(selectedFile.size)}</span>
+                      {duration > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                   {uploadSuccess && (
                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30">

@@ -124,3 +124,12 @@ func (m *MinioClient) ExtractObjectName(fileURL string) string {
 	}
 	return strings.TrimPrefix(fileURL, prefix)
 }
+
+// DeleteFile deletes a file from MinIO storage
+func (m *MinioClient) DeleteFile(ctx context.Context, objectName string) error {
+	err := m.Client.RemoveObject(ctx, m.BucketName, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete object from MinIO: %w", err)
+	}
+	return nil
+}

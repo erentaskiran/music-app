@@ -358,3 +358,215 @@ func (r *Router) SearchHandler(w http.ResponseWriter, req *http.Request) {
 
 	utils.JSONSuccess(w, tracks, http.StatusOK)
 }
+
+// GetMyTracksHandler godoc
+// @Summary Get current user's uploaded tracks
+// @Description Retrieves all tracks uploaded by the currently authenticated user
+// @Tags Protected
+// @Produce json
+// @Security ApiKeyAuth
+// @Param limit query int false "Number of tracks to return (default 50)"
+// @Param offset query int false "Offset for pagination (default 0)"
+// @Success 200 {array} models.TrackWithArtist
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/my-tracks [get]
+func (r *Router) GetMyTracksHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse query parameters
+	limit := 50
+	offset := 0
+
+	if l := req.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	if o := req.URL.Query().Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	repo := repository.NewRepository(r.Db)
+	tracks, err := repo.GetTracksByArtistID(userID, limit, offset)
+	if err != nil {
+		slog.Error("Failed to get user tracks", "error", err, "user_id", userID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get tracks", http.StatusInternalServerError)
+		return
+	}
+
+	// Return empty array instead of null if no tracks
+	if tracks == nil {
+		tracks = []models.TrackWithArtist{}
+	}
+
+	utils.JSONSuccess(w, tracks, http.StatusOK)
+}
+
+// DeleteTrackHandler godoc
+// @Summary Delete a track
+// @Description Deletes a track owned by the current user. Also removes the file from storage.
+// @Tags Protected
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Track ID"
+// @Success 204 "Track deleted successfully"
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/my-tracks/{id} [delete]
+func (r *Router) DeleteTrackHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(req)
+	trackIDStr := vars["id"]
+	trackID, err := strconv.Atoi(trackIDStr)
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid track ID", http.StatusBadRequest)
+		return
+	}
+
+	repo := repository.NewRepository(r.Db)
+
+	// Verify ownership
+	ownerID, err := repo.GetTrackOwner(trackID)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
+			return
+		}
+		slog.Error("Failed to get track owner", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to verify ownership", http.StatusInternalServerError)
+		return
+	}
+
+	if ownerID != userID {
+		utils.JSONError(w, api_errors.ErrForbidden, "you don't have permission to delete this track", http.StatusForbidden)
+		return
+	}
+
+	// Get track info to delete file from storage
+	track, err := repo.GetTrackByID(trackID)
+	if err != nil {
+		slog.Error("Failed to get track", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get track info", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete from database first
+	if err := repo.DeleteTrack(trackID); err != nil {
+		slog.Error("Failed to delete track from database", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to delete track", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete file from storage (best effort - don't fail if this fails)
+	if track != nil && track.FileURL != "" {
+		objectName := r.Storage.ExtractObjectName(track.FileURL)
+		if objectName != "" {
+			if err := r.Storage.DeleteFile(req.Context(), objectName); err != nil {
+				slog.Warn("Failed to delete file from storage", "error", err, "object_name", objectName)
+			}
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// UpdateTrackHandler godoc
+// @Summary Update a track's details
+// @Description Updates the title, genre, or cover image URL of a track owned by the current user
+// @Tags Protected
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Track ID"
+// @Param body body object true "Track update data" example({"title": "New Title", "genre": "Rock", "cover_image_url": "https://example.com/cover.jpg"})
+// @Success 200 {object} models.Track
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/my-tracks/{id} [put]
+func (r *Router) UpdateTrackHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(req)
+	trackIDStr := vars["id"]
+	trackID, err := strconv.Atoi(trackIDStr)
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid track ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body
+	var updateData struct {
+		Title         string  `json:"title"`
+		Genre         *string `json:"genre"`
+		CoverImageURL *string `json:"cover_image_url"`
+	}
+
+	if err := utils.DecodeJSONBody(w, req, &updateData); err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if updateData.Title == "" {
+		utils.JSONError(w, api_errors.ErrBadRequest, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	repo := repository.NewRepository(r.Db)
+
+	// Verify ownership
+	ownerID, err := repo.GetTrackOwner(trackID)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
+			return
+		}
+		slog.Error("Failed to get track owner", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to verify ownership", http.StatusInternalServerError)
+		return
+	}
+
+	if ownerID != userID {
+		utils.JSONError(w, api_errors.ErrForbidden, "you don't have permission to update this track", http.StatusForbidden)
+		return
+	}
+
+	// Update track
+	if err := repo.UpdateTrack(trackID, updateData.Title, updateData.Genre, updateData.CoverImageURL); err != nil {
+		slog.Error("Failed to update track", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to update track", http.StatusInternalServerError)
+		return
+	}
+
+	// Get updated track
+	track, err := repo.GetTrackByID(trackID)
+	if err != nil {
+		slog.Error("Failed to get updated track", "error", err, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "track updated but failed to retrieve", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, track, http.StatusOK)
+}
