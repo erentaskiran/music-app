@@ -32,7 +32,7 @@ export default function AlbumsPage() {
     try {
       const data = await getAlbums()
       setAlbums(data)
-    } catch (error) {
+    } catch {
       toast.error("Failed to load albums")
     } finally {
       setIsLoading(false)
@@ -48,7 +48,7 @@ export default function AlbumsPage() {
         await deleteAlbum(id)
         toast.success("Album deleted successfully")
         loadAlbums()
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete album")
       }
     }
@@ -104,6 +104,7 @@ export default function AlbumsPage() {
                     className="group relative bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 hover:border-purple-500/50 transition-colors"
                   >
                     <div className="aspect-square relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={album.cover_url || "/placeholder.svg"}
                         alt={album.title}

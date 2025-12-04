@@ -209,6 +209,7 @@ export default function PlaylistPage() {
             <div className="flex-shrink-0">
               <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-2xl flex items-center justify-center flex-shrink-0">
                 {selectedPlaylist.cover_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img 
                     src={selectedPlaylist.cover_url} 
                     alt={selectedPlaylist.title}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Disc, Calendar, User, Plus, Trash2, Music, Search } from "lucide-react"
+import { Calendar, User, Plus, Trash2, Music, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,13 +41,14 @@ export default function AlbumDetailsPage() {
     if (params.id) {
       loadAlbum(Number(params.id))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   const loadAlbum = async (id: number) => {
     try {
       const data = await getAlbum(id)
       setAlbum(data)
-    } catch (error) {
+    } catch {
       toast.error("Failed to load album")
       router.push("/admin/albums")
     } finally {
@@ -76,7 +77,7 @@ export default function AlbumDetailsPage() {
       toast.success("Track added to album")
       loadAlbum(album.id) // Reload to show new track
       setIsAddingTrack(false)
-    } catch (error) {
+    } catch {
       toast.error("Failed to add track")
     }
   }
@@ -87,7 +88,7 @@ export default function AlbumDetailsPage() {
       await removeTrackFromAlbum(album.id, trackId)
       toast.success("Track removed from album")
       loadAlbum(album.id)
-    } catch (error) {
+    } catch {
       toast.error("Failed to remove track")
     }
   }
@@ -113,6 +114,7 @@ export default function AlbumDetailsPage() {
           <div className="w-full md:w-1/3 space-y-6">
             <Card className="bg-[#0a0a0a] border-gray-800 overflow-hidden">
               <div className="aspect-square relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={album.cover_url || "/placeholder.svg"}
                   alt={album.title}

@@ -14,7 +14,7 @@ import { ApiError } from "@/lib/errors"
 
 function SettingsPage() {
   // Profile state
-  const [profile, setProfile] = useState<ProfileResponse | null>(null)
+  const [, setProfile] = useState<ProfileResponse | null>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   
   // Profile form state

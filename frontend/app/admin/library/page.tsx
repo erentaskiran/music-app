@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { Music, Pencil, Trash2, Search, Plus, Loader2, Upload, X } from "lucide-react"
+import { motion } from "framer-motion"
+import { Music, Pencil, Trash2, Search, Plus, Loader2, Upload } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { withAuth } from "@/lib/auth"
 import {
@@ -233,6 +233,7 @@ function MusicLibraryPage() {
                     >
                       <TableCell>
                         {track.coverImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={track.coverImageUrl}
                             alt={track.title}
@@ -303,6 +304,7 @@ function MusicLibraryPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         {track.coverImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={track.coverImageUrl}
                             alt={track.title}
@@ -386,7 +388,7 @@ function MusicLibraryPage() {
                 <Search className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-2">No results found</h3>
                 <p className="text-gray-400">
-                  No tracks match "{searchQuery}". Try a different search term.
+                  No tracks match &quot;{searchQuery}&quot;. Try a different search term.
                 </p>
               </div>
             )}
@@ -436,7 +438,7 @@ function MusicLibraryPage() {
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">Edit Track</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Update the details of your track. Click save when you're done.
+              Update the details of your track. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -493,7 +495,7 @@ function MusicLibraryPage() {
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-red-400">Delete Track</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Are you sure you want to delete "{trackToDelete?.title}"? This action cannot be undone and the audio file will be permanently removed.
+              Are you sure you want to delete &quot;{trackToDelete?.title}&quot;? This action cannot be undone and the audio file will be permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">

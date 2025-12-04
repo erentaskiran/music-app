@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Disc, Image as ImageIcon, Search, Plus, X } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { createAlbum, makeRequest } from "@/lib/api"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface Track {
   id: number
@@ -160,6 +159,7 @@ export default function CreateAlbumPage() {
                 
                 {imagePreview ? (
                   <div className="relative w-48 h-48 mx-auto">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={imagePreview} 
                       alt="Cover preview" 
