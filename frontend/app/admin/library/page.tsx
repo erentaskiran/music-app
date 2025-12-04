@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Music, Pencil, Trash2, Search, Plus, Loader2 } from "lucide-react"
+import { Music, Pencil, Trash2, Search, Plus, Loader2, Upload } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { withAuth } from "@/lib/auth"
 import {
