@@ -60,6 +60,7 @@ func (r *Router) NewRouter() *mux.Router {
 	// Protected routes (authenticated users)
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.HandleFunc("/me", r.MeHandler).Methods(http.MethodGet, http.MethodOptions)
+	protected.HandleFunc("/users", r.GetUsersHandler).Methods(http.MethodGet, http.MethodOptions)
 	protected.HandleFunc("/profile", h.GetProfileHandler).Methods(http.MethodGet, http.MethodOptions)
 	protected.HandleFunc("/profile", h.UpdateProfileHandler).Methods(http.MethodPut, http.MethodOptions)
 	protected.HandleFunc("/profile/password", h.ChangePasswordHandler).Methods(http.MethodPut, http.MethodOptions)

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Upload, Music, File, CheckCircle2 } from "lucide-react"
+import { Upload, Music, File, CheckCircle2, Image as ImageIcon, User, Disc } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,15 +12,53 @@ import { toast } from "sonner"
 import { withAuth } from "@/lib/auth"
 import { makeAuthenticatedRequest } from "@/lib/api"
 
+interface Album {
+  id: number
+  title: string
+  cover_url?: string
+}
+
+interface User {
+  id: number
+  username: string
+}
+
 function MusicUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedCover, setSelectedCover] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [musicTitle, setMusicTitle] = useState("")
   const [genre, setGenre] = useState("")
   const [duration, setDuration] = useState<number>(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [isDraggingCover, setIsDraggingCover] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+  
+  const [albums, setAlbums] = useState<Album[]>([])
+  const [artists, setArtists] = useState<User[]>([])
+  const [selectedAlbum, setSelectedAlbum] = useState<string>("")
+  const [selectedArtist, setSelectedArtist] = useState<string>("")
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [albumsData, usersData] = await Promise.all([
+          makeAuthenticatedRequest("/albums"),
+          makeAuthenticatedRequest("/users")
+        ])
+        setAlbums(albumsData)
+        setArtists(usersData)
+      } catch (error) {
+        console.error("Failed to fetch data:", error)
+        toast.error("Failed to load albums and artists")
+      }
+    }
+    fetchData()
+  }, [])
 
   const getAudioDuration = (file: File): Promise<number> => {
     return new Promise((resolve) => {
@@ -62,30 +100,51 @@ function MusicUploadPage() {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    
-    const file = e.dataTransfer.files[0]
-    if (file) {
-      handleFileSelect(file)
+  const handleCoverSelect = (file: File) => {
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const img = new Image()
+        img.onload = () => {
+            // Optional: Check dimensions here if needed, e.g. if (img.width < 500) ...
+            setSelectedCover(file)
+            setCoverPreview(reader.result as string)
+        }
+        img.src = reader.result as string
+      }
+      reader.readAsDataURL(file)
+    } else {
+      toast.error("Please select a valid image file")
     }
   }
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDragOver = (e: React.DragEvent, setDragging: (v: boolean) => void) => {
+    e.preventDefault()
+    setDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent, setDragging: (v: boolean) => void) => {
+    e.preventDefault()
+    setDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent, type: 'audio' | 'cover') => {
+    e.preventDefault()
+    if (type === 'audio') setIsDragging(false)
+    else setIsDraggingCover(false)
+    
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      if (type === 'audio') handleFileSelect(file)
+      else handleCoverSelect(file)
+    }
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'audio' | 'cover') => {
     const file = e.target.files?.[0]
     if (file) {
-      handleFileSelect(file)
+      if (type === 'audio') handleFileSelect(file)
+      else handleCoverSelect(file)
     }
   }
 
@@ -113,6 +172,15 @@ function MusicUploadPage() {
       if (duration > 0) {
         formData.append("duration", duration.toString())
       }
+      if (selectedCover) {
+        formData.append("cover_image", selectedCover)
+      }
+      if (selectedAlbum) {
+        formData.append("album_id", selectedAlbum)
+      }
+      if (selectedArtist) {
+        formData.append("artist_id", selectedArtist)
+      }
 
       await makeAuthenticatedRequest("/tracks/upload", {
         method: "POST",
@@ -129,13 +197,16 @@ function MusicUploadPage() {
       // Reset form after 2 seconds
       setTimeout(() => {
         setSelectedFile(null)
+        setSelectedCover(null)
+        setCoverPreview(null)
         setMusicTitle("")
         setGenre("")
         setDuration(0)
+        setSelectedAlbum("")
+        setSelectedArtist("")
         setUploadSuccess(false)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
+        if (fileInputRef.current) fileInputRef.current.value = ""
+        if (coverInputRef.current) coverInputRef.current.value = ""
       }, 2000)
     } catch (error) {
       console.error(error)
@@ -164,40 +235,88 @@ function MusicUploadPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* File Upload Area */}
-            <div className="space-y-2">
-              <Label className="text-gray-200">Music File</Label>
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`
-                  border-2 border-dashed rounded-lg p-8 transition-all duration-300 cursor-pointer
-                  ${isDragging 
-                    ? "border-purple-500 bg-purple-500/10" 
-                    : "border-gray-700 hover:border-gray-600 bg-[#1a1a1a]"
-                  }
-                `}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
-                  onChange={handleFileInputChange}
-                  className="hidden"
-                />
-                <div className="flex flex-col items-center gap-3">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                    <Music className="w-8 h-8 text-purple-400" />
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* File Upload Area */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">Music File *</Label>
+                <div
+                  onDragOver={(e) => handleDragOver(e, setIsDragging)}
+                  onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
+                  onDrop={(e) => handleDrop(e, 'audio')}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`
+                    border-2 border-dashed rounded-lg p-8 transition-all duration-300 cursor-pointer h-48 flex flex-col items-center justify-center
+                    ${isDragging 
+                      ? "border-purple-500 bg-purple-500/10" 
+                      : "border-gray-700 hover:border-gray-600 bg-[#1a1a1a]"
+                    }
+                  `}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
+                    onChange={(e) => handleFileInputChange(e, 'audio')}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                      <Music className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white font-medium text-sm">
+                        {selectedFile ? selectedFile.name : "Click to upload audio"}
+                      </p>
+                      {!selectedFile && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          MP3, WAV, FLAC
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-white font-medium">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      MP3, WAV, or FLAC (Max 100MB)
-                    </p>
+                </div>
+              </div>
+
+              {/* Cover Image Upload Area */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">Cover Image (Optional)</Label>
+                <div
+                  onDragOver={(e) => handleDragOver(e, setIsDraggingCover)}
+                  onDragLeave={(e) => handleDragLeave(e, setIsDraggingCover)}
+                  onDrop={(e) => handleDrop(e, 'cover')}
+                  onClick={() => coverInputRef.current?.click()}
+                  className={`
+                    border-2 border-dashed rounded-lg p-8 transition-all duration-300 cursor-pointer h-48 flex flex-col items-center justify-center relative overflow-hidden
+                    ${isDraggingCover 
+                      ? "border-purple-500 bg-purple-500/10" 
+                      : "border-gray-700 hover:border-gray-600 bg-[#1a1a1a]"
+                    }
+                  `}
+                >
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileInputChange(e, 'cover')}
+                    className="hidden"
+                  />
+                  {coverPreview ? (
+                    <img src={coverPreview} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover opacity-50 hover:opacity-40 transition-opacity" />
+                  ) : null}
+                  <div className="flex flex-col items-center gap-3 z-10">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                      <ImageIcon className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white font-medium text-sm">
+                        {selectedCover ? "Change Cover" : "Click to upload cover"}
+                      </p>
+                      {!selectedCover && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          JPG, PNG
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -238,7 +357,7 @@ function MusicUploadPage() {
               </motion.div>
             )}
 
-            {/* Music Title Input */}
+            {/* Form Fields */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-gray-200">
@@ -263,6 +382,48 @@ function MusicUploadPage() {
                   onChange={(e) => setGenre(e.target.value)}
                   className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="artist" className="text-gray-200">
+                  Artist (Optional)
+                </Label>
+                <div className="relative">
+                  <select
+                    id="artist"
+                    value={selectedArtist}
+                    onChange={(e) => setSelectedArtist(e.target.value)}
+                    className="w-full h-10 px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                  >
+                    <option value="">Select Artist (Default: You)</option>
+                    {artists.map((artist) => (
+                      <option key={artist.id} value={artist.id}>
+                        {artist.username}
+                      </option>
+                    ))}
+                  </select>
+                  <User className="absolute right-3 top-2.5 w-5 h-5 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="album" className="text-gray-200">
+                  Album (Optional)
+                </Label>
+                <div className="relative">
+                  <select
+                    id="album"
+                    value={selectedAlbum}
+                    onChange={(e) => setSelectedAlbum(e.target.value)}
+                    className="w-full h-10 px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                  >
+                    <option value="">Select Album (None)</option>
+                    {albums.map((album) => (
+                      <option key={album.id} value={album.id}>
+                        {album.title}
+                      </option>
+                    ))}
+                  </select>
+                  <Disc className="absolute right-3 top-2.5 w-5 h-5 text-gray-500 pointer-events-none" />
+                </div>
               </div>
             </div>
 

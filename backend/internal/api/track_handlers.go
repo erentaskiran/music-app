@@ -49,6 +49,20 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	repo := repository.NewRepository(r.Db)
+
+	// Determine Artist ID
+	artistID := userID
+	if artistIDStr := req.FormValue("artist_id"); artistIDStr != "" {
+		// Check if user is admin, if so allow overriding artist_id
+		role, err := repo.GetUserRoleByID(userID)
+		if err == nil && role == "admin" {
+			if aid, err := strconv.Atoi(artistIDStr); err == nil {
+				artistID = aid
+			}
+		}
+	}
+
 	// Get file
 	file, header, err := req.FormFile("file")
 	if err != nil {
@@ -87,6 +101,22 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Handle Cover Image
+	var coverImageURL *string
+	coverFile, coverHeader, err := req.FormFile("cover_image")
+	if err == nil {
+		defer coverFile.Close()
+		// Upload cover image
+		sanitizedCoverName := sanitizeFilename(coverHeader.Filename)
+		url, err := r.Storage.UploadFile(req.Context(), coverFile, coverHeader.Size, coverHeader.Header.Get("Content-Type"), "covers/"+sanitizedCoverName)
+		if err != nil {
+			slog.Error("Failed to upload cover image", "error", err)
+			utils.JSONError(w, api_errors.ErrInternalServer, "failed to upload cover image", http.StatusInternalServerError)
+			return
+		}
+		coverImageURL = &url
+	}
+
 	// Get other fields
 	title := req.FormValue("title")
 	if title == "" {
@@ -102,6 +132,22 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// Album Logic
+	var albumID int
+	if aid := req.FormValue("album_id"); aid != "" {
+		if id, err := strconv.Atoi(aid); err == nil {
+			albumID = id
+		}
+	}
+
+	// If no cover image uploaded, and album selected, use album cover
+	if coverImageURL == nil && albumID != 0 {
+		album, err := repo.GetAlbumByID(albumID)
+		if err == nil && album.CoverURL != nil {
+			coverImageURL = album.CoverURL
+		}
+	}
+
 	// Helper to convert empty string to nil pointer
 	stringPtr := func(s string) *string {
 		if s == "" {
@@ -112,17 +158,23 @@ func (r *Router) CreateTrackHandler(w http.ResponseWriter, req *http.Request) {
 
 	track := &models.Track{
 		Title:         title,
-		ArtistID:      userID,
+		ArtistID:      artistID,
 		FileURL:       fileURL,
 		Duration:      duration,
-		CoverImageURL: stringPtr(req.FormValue("cover_image_url")),
+		CoverImageURL: coverImageURL,
 		Genre:         stringPtr(req.FormValue("genre")),
 	}
 
-	repo := repository.NewRepository(r.Db)
 	if err := repo.CreateTrack(track); err != nil {
 		utils.JSONError(w, api_errors.ErrInternalServer, "failed to create track", http.StatusInternalServerError)
 		return
+	}
+
+	// Link to Album if provided
+	if albumID != 0 {
+		if err := repo.AddTrackToAlbum(albumID, track.ID); err != nil {
+			slog.Error("Failed to add track to album", "error", err, "album_id", albumID, "track_id", track.ID)
+		}
 	}
 
 	utils.JSONSuccess(w, track, http.StatusCreated)

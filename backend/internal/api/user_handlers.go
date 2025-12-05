@@ -40,3 +40,23 @@ func (r *Router) MeHandler(w http.ResponseWriter, req *http.Request) {
 		AvatarURL: u.AvatarURL,
 	}, http.StatusOK)
 }
+
+// GetUsersHandler godoc
+// @Summary Get all users
+// @Description Retrieves all users (for admin/artist selection)
+// @Tags Protected
+// @Accept  json
+// @Produce  json
+// @Security ApiKeyAuth
+// @Success 200 {array} models.User
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/users [get]
+func (r *Router) GetUsersHandler(w http.ResponseWriter, req *http.Request) {
+	repo := repository.NewRepository(r.Db)
+	users, err := repo.GetAllUsers()
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get users", http.StatusInternalServerError)
+		return
+	}
+	utils.JSONSuccess(w, users, http.StatusOK)
+}
