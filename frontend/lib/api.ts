@@ -547,14 +547,14 @@ export async function deletePlaylist(playlistId: number): Promise<void> {
  * Get all albums
  */
 export async function getAlbums() {
-    return makeAuthenticatedRequest('/albums')
+    return makeRequest('/albums')
 }
 
 /**
  * Get album by ID
  */
 export async function getAlbum(id: number) {
-    return makeAuthenticatedRequest(`/albums/${id}`)
+    return makeRequest(`/albums/${id}`)
 }
 
 /**
