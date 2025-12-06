@@ -23,9 +23,10 @@ import {
   MoreVertical,
   X,
   Search,
-  Play
+  Play,
+  Heart
 } from 'lucide-react'
-import { searchTracks } from '@/lib/api'
+import { searchTracks, likeTrack, unlikeTrack } from '@/lib/api'
 import type { Track } from '@/lib/types'
 
 export default function PlaylistPage() {
@@ -34,7 +35,7 @@ export default function PlaylistPage() {
   const playlistId = parseInt(params.id as string)
   
   const { selectedPlaylist, selectPlaylist, updatePlaylist, deletePlaylist, removeTrackFromPlaylist, addTrackToPlaylist } = usePlaylist()
-  const { playTrack } = usePlayer()
+  const { playTrack, currentTrack, isPlaying } = usePlayer()
   const [isLoading, setIsLoading] = useState(true)
   const [showEditMenu, setShowEditMenu] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -44,6 +45,8 @@ export default function PlaylistPage() {
   const [searchResults, setSearchResults] = useState<Track[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null)
+  const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -78,6 +81,15 @@ export default function PlaylistPage() {
         artist: t.artist_name,
         duration: t.duration
       })))
+      
+      // Initialize liked tracks
+      const liked = new Set<number>()
+      selectedPlaylist.tracks?.forEach(track => {
+        if (track.is_favorited) {
+          liked.add(track.id)
+        }
+      })
+      setLikedTracks(liked)
     }
   }, [selectedPlaylist])
 
@@ -144,6 +156,35 @@ export default function PlaylistPage() {
       await removeTrackFromPlaylist(playlistId, trackId)
     } catch (err) {
       console.error('Failed to remove track:', err)
+    }
+  }
+
+  const handleToggleFavorite = async (e: React.MouseEvent, trackId: number) => {
+    e.stopPropagation()
+    const isCurrentlyLiked = likedTracks.has(trackId)
+    
+    try {
+      setLoadingTrackIds(prev => new Set(prev).add(trackId))
+      
+      if (isCurrentlyLiked) {
+        await unlikeTrack(trackId)
+        setLikedTracks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(trackId)
+          return newSet
+        })
+      } else {
+        await likeTrack(trackId)
+        setLikedTracks(prev => new Set(prev).add(trackId))
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    } finally {
+      setLoadingTrackIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(trackId)
+        return newSet
+      })
     }
   }
 
@@ -243,7 +284,7 @@ export default function PlaylistPage() {
                       className="text-4xl font-bold h-auto py-2"
                     />
                     <Button size="sm" onClick={handleUpdateTitle}>
-                      Kaydet
+                      Save
                     </Button>
                     <Button
                       size="sm"
@@ -253,7 +294,7 @@ export default function PlaylistPage() {
                         setEditTitle('')
                       }}
                     >
-                      İptal
+                      Cancel
                     </Button>
                   </div>
                 ) : (
@@ -261,15 +302,26 @@ export default function PlaylistPage() {
                 )}
 
                 <p className="text-lg text-muted-foreground mb-6">
-                  {playlistTracks.length} {playlistTracks.length === 1 ? 'şarkı' : 'şarkı'}
+                  {playlistTracks.length} {playlistTracks.length === 1 ? 'song' : 'songs'}
                 </p>
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-4">
+                <Button 
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => playlistTracks.length > 0 && playTrack(playlistTracks[0], playlistTracks.slice(1))}
+                  disabled={playlistTracks.length === 0}
+                  title="Play playlist"
+                >
+                  <Play className="h-5 w-5 mr-2 fill-current" />
+                  Play
+                </Button>
+
                 <Button onClick={() => setShowAddTracks(true)} size="lg">
                   <Plus className="h-5 w-5 mr-2" />
-                  Şarkı Ekle
+                  Add Song
                 </Button>
 
                 <div className="relative">
@@ -291,7 +343,7 @@ export default function PlaylistPage() {
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-muted rounded-t-md text-sm"
                       >
-                        Yeniden Adlandır
+                        Rename
                       </button>
                       <div className="border-t" />
                       <button
@@ -301,7 +353,7 @@ export default function PlaylistPage() {
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-destructive/10 text-destructive rounded-b-md text-sm"
                       >
-                        Sil
+                        Delete
                       </button>
                     </div>
                   )}
@@ -313,61 +365,110 @@ export default function PlaylistPage() {
           {/* Tracks List */}
           {playlistTracks.length > 0 ? (
             <div className="h-full flex flex-col">
-              <h2 className="text-2xl font-bold mb-6 flex-shrink-0">Şarkılar ({playlistTracks.length})</h2>
+              <h2 className="text-2xl font-bold mb-6 flex-shrink-0">Songs ({playlistTracks.length})</h2>
               <div className="space-y-2 overflow-y-auto flex-1">
-                {playlistTracks.map((track, index) => (
+                {playlistTracks.map((track, index) => {
+                  const isCurrentTrack = currentTrack?.id === track.id
+                  return (
                   <div
                     key={track.id}
-                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors group"
+                    className={`flex items-center gap-3 p-4 rounded-lg transition-colors group ${
+                      isCurrentTrack 
+                        ? 'bg-primary/20 hover:bg-primary/25' 
+                        : 'hover:bg-muted/50'
+                    }`}
                   >
-                    <span className="text-muted-foreground w-8 text-right">{index + 1}</span>
+                    <span className={`w-8 text-right flex-shrink-0 ${
+                      isCurrentTrack 
+                        ? 'text-primary font-semibold' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      {isCurrentTrack && isPlaying ? (
+                        <span className="flex gap-0.5 justify-end">
+                          <span className="w-0.5 h-3 bg-primary animate-pulse" />
+                          <span className="w-0.5 h-3 bg-primary animate-pulse delay-75" />
+                          <span className="w-0.5 h-3 bg-primary animate-pulse delay-150" />
+                        </span>
+                      ) : (
+                        index + 1
+                      )}
+                    </span>
                     
+                    {/* Play Button - Always Visible */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-12 w-12 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-8 w-8 p-0 flex-shrink-0"
                       onClick={() => playTrack(track, playlistTracks)}
+                      title="Play track"
                     >
-                      <Play className="h-5 w-5 fill-current" />
+                      <Play className="h-4 w-4 fill-current" />
                     </Button>
 
+                    {/* Track Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{track.title}</p>
+                      <p className={`font-medium truncate ${
+                        isCurrentTrack ? 'text-primary' : ''
+                      }`}>
+                        {track.title}
+                      </p>
                       <p className="text-sm text-muted-foreground truncate">
-                        {track.artist_name || 'Bilinmeyen Sanatçı'}
+                        {track.artist_name || 'Unknown Artist'}
                       </p>
                     </div>
 
-                    <div className="text-sm text-muted-foreground">
+                    {/* Duration */}
+                    <div className="text-sm text-muted-foreground flex-shrink-0">
                       {track.duration
                         ? `${Math.floor((track.duration || 0) / 60)}:${String((track.duration || 0) % 60).padStart(2, '0')}`
                         : '-'}
                     </div>
 
+                    {/* Heart Button - Add to Favorites */}
+                    <Button
+                      onClick={(e) => handleToggleFavorite(e, track.id)}
+                      disabled={loadingTrackIds.has(track.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      title={likedTracks.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Heart
+                        className={`w-4 h-4 transition-colors ${
+                          likedTracks.has(track.id)
+                            ? 'fill-green-500 stroke-green-500 text-green-500'
+                            : 'stroke-current'
+                        }`}
+                      />
+                    </Button>
+
+                    {/* Remove Button - Delete from Playlist */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 p-0 flex-shrink-0"
                       onClick={() => handleRemoveTrack(track.id)}
+                      title="Remove from playlist"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
-                ))}
+                )
+                })}
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center gap-4 py-12">
               <Music className="h-16 w-16 text-muted-foreground opacity-50" />
               <div>
-                <h3 className="text-xl font-semibold mb-2">Bu çalma listesinde şarkı yok</h3>
+                <h3 className="text-xl font-semibold mb-2">No songs in this playlist</h3>
                 <p className="text-muted-foreground mb-6">
-                  Başlamak için şarkı ekleyin
+                  Add a song to get started
                 </p>
               </div>
               <Button onClick={() => setShowAddTracks(true)} size="lg">
                 <Plus className="h-5 w-5 mr-2" />
-                Şarkı Ekle
+                Add Song
               </Button>
             </div>
           )}

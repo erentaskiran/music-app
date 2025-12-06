@@ -34,6 +34,7 @@ export interface Track {
   status: string
   created_at: string
   updated_at: string
+  is_favorited?: boolean
 }
 
 export interface Playlist {

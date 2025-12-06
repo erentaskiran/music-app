@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { usePlayer } from '@/contexts/player-context'
 import { Track } from '@/lib/types'
-import { getRecentlyPlayed, RecentlyPlayedResponse } from '@/lib/api'
+import { getRecentlyPlayed, RecentlyPlayedResponse, likeTrack, unlikeTrack } from '@/lib/api'
 import { isAuthenticated } from '@/lib/api'
-import { Clock, Music2, Play, Loader2 } from 'lucide-react'
+import { Clock, Music2, Play, Loader2, Heart } from 'lucide-react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ export function RecentlyPlayed() {
   const [recentTracks, setRecentTracks] = useState<RecentlyPlayedTrack[]>([])
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
   const { playTrack, currentTrack, isPlaying } = usePlayer()
 
   const loadRecentTracks = useCallback(async () => {
@@ -49,8 +51,18 @@ export function RecentlyPlayed() {
         played_at: t.played_at,
         created_at: t.played_at,
         updated_at: t.played_at,
+        is_favorited: t.is_favorited,
       }))
       setRecentTracks(tracks)
+      
+      // Initialize liked tracks
+      const liked = new Set<number>()
+      tracks.forEach(track => {
+        if (track.is_favorited) {
+          liked.add(track.id)
+        }
+      })
+      setLikedTracks(liked)
     } catch (error) {
       console.error('Failed to fetch recently played:', error)
       setRecentTracks([])
@@ -148,6 +160,33 @@ export function RecentlyPlayed() {
               track={track} 
               onPlay={() => playTrack(track, recentTracks.slice(index + 1))}
               isPlaying={currentTrack?.id === track.id && isPlaying}
+              isFavorited={likedTracks.has(track.id)}
+              isLoading={loadingTrackIds.has(track.id)}
+              onToggleFavorite={async () => {
+                const isCurrentlyLiked = likedTracks.has(track.id)
+                try {
+                  setLoadingTrackIds(prev => new Set(prev).add(track.id))
+                  if (isCurrentlyLiked) {
+                    await unlikeTrack(track.id)
+                    setLikedTracks(prev => {
+                      const newSet = new Set(prev)
+                      newSet.delete(track.id)
+                      return newSet
+                    })
+                  } else {
+                    await likeTrack(track.id)
+                    setLikedTracks(prev => new Set(prev).add(track.id))
+                  }
+                } catch (error) {
+                  console.error('Failed to toggle favorite:', error)
+                } finally {
+                  setLoadingTrackIds(prev => {
+                    const newSet = new Set(prev)
+                    newSet.delete(track.id)
+                    return newSet
+                  })
+                }
+              }}
             />
           ))}
         </div>
@@ -178,15 +217,17 @@ interface RecentTrackCardProps {
   track: RecentlyPlayedTrack
   onPlay: () => void
   isPlaying: boolean
+  isFavorited: boolean
+  isLoading: boolean
+  onToggleFavorite: () => Promise<void>
 }
 
-function RecentTrackCard({ track, onPlay, isPlaying }: RecentTrackCardProps) {
+function RecentTrackCard({ track, onPlay, isPlaying, isFavorited, isLoading, onToggleFavorite }: RecentTrackCardProps) {
   return (
-    <Card className="group flex-shrink-0 w-[160px] overflow-hidden border-0 bg-card/50 hover:bg-card transition-colors py-0">
+    <Card className="group flex-shrink-0 w-[160px] overflow-hidden border-0 bg-card/50 hover:bg-card transition-colors py-0 relative">
       <CardContent className="p-0">
-        <Button
-          variant="ghost"
-          className="w-full h-auto p-0 hover:bg-transparent"
+        <div
+          className="w-full h-auto cursor-pointer"
           onClick={onPlay}
         >
           <div className="w-full">
@@ -217,6 +258,27 @@ function RecentTrackCard({ track, onPlay, isPlaying }: RecentTrackCardProps) {
                   )}
                 </div>
               </div>
+              
+              {/* Heart button */}
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleFavorite()
+                }}
+                disabled={isLoading}
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-8 w-8 p-0 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Heart
+                  className={`w-4 h-4 transition-colors ${
+                    isFavorited
+                      ? 'fill-green-500 stroke-green-500 text-green-500'
+                      : 'stroke-white text-white'
+                  }`}
+                />
+              </Button>
             </div>
             <div className="p-3 text-left">
               <p className="font-semibold text-sm truncate">{track.title}</p>
@@ -226,7 +288,7 @@ function RecentTrackCard({ track, onPlay, isPlaying }: RecentTrackCardProps) {
               </Badge>
             </div>
           </div>
-        </Button>
+        </div>
       </CardContent>
     </Card>
   )

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
-import { searchTracks, searchUsers, makeRequest, ProfileResponse } from "@/lib/api"
+import { searchTracks, searchUsers, makeRequest, ProfileResponse, likeTrack, unlikeTrack } from "@/lib/api"
 import { Track, Album } from "@/lib/types"
 import { usePlayer } from "@/contexts/player-context"
 import { useAuth } from "@/lib/auth"
@@ -29,6 +29,8 @@ function SearchResults() {
   const [albums, setAlbums] = useState<Album[]>([])
   const [artists, setArtists] = useState<ProfileResponse[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
   const { playTrack, currentTrack, isPlaying, togglePlay, addToQueue, playNext } = usePlayer()
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth()
 
@@ -50,7 +52,18 @@ function SearchResults() {
             makeRequest(`/search/albums?q=${encodeURIComponent(query)}`),
             searchUsers(query)
           ])
-          setTracks(tracksData as unknown as Track[])
+          const tracksArray = tracksData as unknown as Track[]
+          setTracks(tracksArray)
+          
+          // Initialize liked tracks from API response
+          const liked = new Set<number>()
+          tracksArray.forEach(track => {
+            if (track.is_favorited) {
+              liked.add(track.id)
+            }
+          })
+          setLikedTracks(liked)
+          
           setAlbums(albumsData)
           setArtists(artistsData)
         } catch (error) {
@@ -73,6 +86,35 @@ function SearchResults() {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
+
+  const handleToggleFavorite = async (e: React.MouseEvent, track: Track) => {
+    e.stopPropagation()
+    const isCurrentlyLiked = likedTracks.has(track.id)
+    
+    try {
+      setLoadingTrackIds(prev => new Set(prev).add(track.id))
+      
+      if (isCurrentlyLiked) {
+        await unlikeTrack(track.id)
+        setLikedTracks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(track.id)
+          return newSet
+        })
+      } else {
+        await likeTrack(track.id)
+        setLikedTracks(prev => new Set(prev).add(track.id))
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    } finally {
+      setLoadingTrackIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(track.id)
+        return newSet
+      })
+    }
   }
 
   // Show loading while checking auth
@@ -191,8 +233,21 @@ function SearchResults() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                            <Heart className="h-4 w-4" />
+                          <Button 
+                            onClick={(e) => handleToggleFavorite(e, track)}
+                            disabled={loadingTrackIds.has(track.id)}
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            title={likedTracks.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+                          >
+                            <Heart 
+                              className={`h-4 w-4 transition-colors ${
+                                likedTracks.has(track.id)
+                                  ? 'fill-green-500 stroke-green-500 text-green-500'
+                                  : 'stroke-current'
+                              }`}
+                            />
                           </Button>
                           
                           <DropdownMenu>

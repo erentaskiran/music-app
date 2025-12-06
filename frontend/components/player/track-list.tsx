@@ -3,8 +3,11 @@
 import { usePlayer } from '@/contexts/player-context'
 import { PlayButton } from '@/components/player/play-button'
 import { Track } from '@/lib/types'
-import { Music2 } from 'lucide-react'
+import { Music2, Heart } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { likeTrack, unlikeTrack, isAuthenticated } from '@/lib/api'
 
 interface TrackListProps {
   tracks: Track[]
@@ -19,6 +22,53 @@ function formatDuration(seconds?: number): string {
 
 export function TrackList({ tracks }: TrackListProps) {
   const { currentTrack, isPlaying } = usePlayer()
+  const [likedTracks, setLikedTracks] = useState<Set<number>>(
+    new Set(tracks.filter(t => t.is_favorited).map(t => t.id))
+  )
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
+
+  // Sync liked tracks from track.is_favorited when tracks change
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const liked = new Set<number>()
+      tracks.forEach(track => {
+        if (track.is_favorited) {
+          liked.add(track.id)
+        }
+      })
+      setLikedTracks(liked)
+    }
+  }, [tracks])
+
+  const handleToggleFavorite = async (e: React.MouseEvent, track: Track) => {
+    e.stopPropagation()
+    
+    const isCurrentlyLiked = likedTracks.has(track.id)
+    
+    try {
+      setLoadingTrackIds(prev => new Set(prev).add(track.id))
+      
+      if (isCurrentlyLiked) {
+        await unlikeTrack(track.id)
+        setLikedTracks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(track.id)
+          return newSet
+        })
+      } else {
+        await likeTrack(track.id)
+        setLikedTracks(prev => new Set(prev).add(track.id))
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    } finally {
+      setLoadingTrackIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(track.id)
+        return newSet
+      })
+    }
+  }
 
   if (tracks.length === 0) {
     return (
@@ -100,6 +150,24 @@ export function TrackList({ tracks }: TrackListProps) {
             <span className="text-sm text-muted-foreground tabular-nums w-12 text-right">
               {formatDuration(track.duration)}
             </span>
+
+            {/* Like Button */}
+            <Button
+              onClick={(e) => handleToggleFavorite(e, track)}
+              disabled={loadingTrackIds.has(track.id)}
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              title={likedTracks.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors ${
+                  likedTracks.has(track.id)
+                    ? 'fill-green-500 stroke-green-500 text-green-500'
+                    : 'stroke-current'
+                }`}
+              />
+            </Button>
           </div>
         )
       })}

@@ -33,6 +33,7 @@ export function TracksSection() {
           status: t.status,
           created_at: t.created_at,
           updated_at: t.updated_at,
+          is_favorited: t.is_favorited || false,
         }))
         setTracks(mappedTracks)
       } catch (err) {
