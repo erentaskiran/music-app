@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Home, 
@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { usePlaylist } from '@/contexts/playlist-context'
+import { getUserFavorites } from '@/lib/api'
 
 interface SidebarProps {
   className?: string
@@ -51,6 +52,7 @@ export function Sidebar({ className }: SidebarProps) {
   const [isCreating, setIsCreating] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [playlistName, setPlaylistName] = useState('')
+  const [likedCount, setLikedCount] = useState(0)
 
   const handleRecentlyPlayedClick = () => {
     if (requireAuth()) {
@@ -96,6 +98,22 @@ export function Sidebar({ className }: SidebarProps) {
       console.error('Failed to delete playlist:', error)
     }
   }
+
+  // Load liked songs count
+  useEffect(() => {
+    if (!isAuthenticated) return
+    
+    const loadLikedCount = async () => {
+      try {
+        const tracks = await getUserFavorites(100, 0)
+        setLikedCount(tracks.length || 0)
+      } catch (error) {
+        console.error('Failed to load liked count:', error)
+      }
+    }
+
+    loadLikedCount()
+  }, [isAuthenticated])
 
   return (
     <TooltipProvider>
@@ -181,20 +199,20 @@ export function Sidebar({ className }: SidebarProps) {
               </div>
 
               {/* Liked Songs Card */}
-              <Card className="mb-4 bg-gradient-to-br from-purple-700 to-blue-500 border-0 py-0">
+              <Card className="mb-4 bg-gradient-to-br from-purple-700 to-blue-500 border-0 py-0 cursor-pointer hover:opacity-90 transition-opacity">
                 <CardContent className="p-3">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start gap-3 p-0 h-auto hover:bg-transparent"
+                  <div 
+                    className="w-full justify-start gap-3 p-0 h-auto flex items-center"
+                    onClick={() => router.push('/liked-songs')}
                   >
                     <div className="flex items-center justify-center w-10 h-10 rounded bg-white/10">
                       <Heart className="h-5 w-5 text-white fill-white" />
                     </div>
                     <div className="text-left">
                       <p className="font-semibold text-white text-sm">Liked Songs</p>
-                      <p className="text-xs text-white/70">0 songs</p>
+                      <p className="text-xs text-white/70">{likedCount} {likedCount === 1 ? 'song' : 'songs'}</p>
                     </div>
-                  </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -214,14 +232,16 @@ export function Sidebar({ className }: SidebarProps) {
               ) : playlists.length > 0 ? (
                 <ScrollArea className="h-[calc(100%-2rem)]">
                   <div className="space-y-1 pr-3">
-                    {playlists.map((playlist) => (
-                      <PlaylistItem 
-                        key={playlist.id} 
-                        playlist={playlist}
-                        onSelect={() => router.push(`/playlist/${playlist.id}`)}
-                        onDelete={handleDeletePlaylist}
-                      />
-                    ))}
+                    {playlists
+                      .filter(playlist => playlist.title !== 'Liked Songs')
+                      .map((playlist) => (
+                        <PlaylistItem 
+                          key={playlist.id} 
+                          playlist={playlist}
+                          onSelect={() => router.push(`/playlist/${playlist.id}`)}
+                          onDelete={handleDeletePlaylist}
+                        />
+                      ))}
                   </div>
                 </ScrollArea>
               ) : (

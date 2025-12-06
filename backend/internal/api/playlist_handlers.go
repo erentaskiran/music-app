@@ -109,7 +109,19 @@ func (r *Router) GetPlaylistHandler(w http.ResponseWriter, req *http.Request) {
 	slog.Info("Getting playlist", "playlistID", id)
 
 	playlistRepo := repository.NewPlaylistRepository(r.Db)
-	playlist, err := playlistRepo.GetPlaylistByID(id)
+	
+	// Get user ID from context if authenticated
+	userID, isAuthenticated := middleware.GetUserID(req.Context())
+	
+	var playlist *models.PlaylistWithTracks
+	if isAuthenticated {
+		// Get playlist with favorite status for authenticated users
+		playlist, err = playlistRepo.GetPlaylistByIDWithFavorites(id, userID)
+	} else {
+		// Get playlist without favorite status for unauthenticated users
+		playlist, err = playlistRepo.GetPlaylistByID(id)
+	}
+	
 	if err != nil {
 		slog.Error("Failed to get playlist", "error", err, "playlistID", id)
 		utils.JSONError(w, "NOT_FOUND", "Playlist not found", http.StatusNotFound)

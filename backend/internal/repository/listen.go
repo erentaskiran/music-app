@@ -26,7 +26,8 @@ func (r *Repository) GetRecentlyPlayed(userID int, limit int) ([]models.Recently
 			COALESCE(t.cover_image_url, ''), 
 			COALESCE(t.genre, ''), 
 			COALESCE(t.status, 'published'),
-			l.timestamp as played_at
+			l.timestamp as played_at,
+			COALESCE(EXISTS(SELECT 1 FROM likes WHERE user_id = $1 AND track_id = t.id), false) as is_favorited
 		FROM listens l
 		INNER JOIN tracks t ON l.track_id = t.id
 		LEFT JOIN users u ON t.artist_id = u.id
@@ -61,6 +62,7 @@ func (r *Repository) GetRecentlyPlayed(userID int, limit int) ([]models.Recently
 			&track.Genre,
 			&track.Status,
 			&track.PlayedAt,
+			&track.IsFavorited,
 		)
 		if err != nil {
 			return nil, err

@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"log/slog"
+	"music-app/backend/internal/middleware"
 	"music-app/backend/internal/models"
 	"music-app/backend/internal/repository"
 	"music-app/backend/internal/utils"
@@ -143,7 +144,19 @@ func (r *Router) GetAlbumHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	repo := repository.NewRepository(r.Db)
-	album, err := repo.GetAlbumByID(id)
+	
+	// Get user ID from context if authenticated
+	userID, isAuthenticated := middleware.GetUserID(req.Context())
+	
+	var album interface{}
+	if isAuthenticated {
+		// Get album with favorite status for authenticated users
+		album, err = repo.GetAlbumByIDWithFavorites(id, userID)
+	} else {
+		// Get album without favorite status for unauthenticated users
+		album, err = repo.GetAlbumByID(id)
+	}
+	
 	if err != nil {
 		if err.Error() == "album not found" {
 			utils.JSONError(w, api_errors.ErrNotFound, "album not found", http.StatusNotFound)

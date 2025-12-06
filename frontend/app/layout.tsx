@@ -21,10 +21,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} overflow-x-hidden`}>
         <PlaylistProvider>
           <PlayerProvider>
-            <div className="pb-24">
+            <div className="min-h-screen flex flex-col">
               {children}
             </div>
             <MusicPlayerBar />

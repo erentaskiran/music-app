@@ -349,7 +349,21 @@ func (r *Router) GetTracksHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	repo := repository.NewRepository(r.Db)
-	tracks, err := repo.GetAllTracks(limit, offset)
+
+	// Get user ID from context if authenticated
+	userID, isAuthenticated := middleware.GetUserID(req.Context())
+
+	var tracks []models.TrackWithArtist
+	var err error
+
+	if isAuthenticated {
+		// Get tracks with favorite status for authenticated users
+		tracks, err = repo.GetAllTracksWithFavorites(userID, limit, offset)
+	} else {
+		// Get tracks without favorite status for unauthenticated users
+		tracks, err = repo.GetAllTracks(limit, offset)
+	}
+
 	if err != nil {
 		slog.Error("Failed to get tracks", "error", err)
 		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get tracks", http.StatusInternalServerError)
@@ -399,7 +413,21 @@ func (r *Router) SearchHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	repo := repository.NewRepository(r.Db)
-	tracks, err := repo.SearchTracks(query, limit, offset)
+
+	// Get user ID from context if authenticated
+	userID, isAuthenticated := middleware.GetUserID(req.Context())
+
+	var tracks []models.TrackWithArtist
+	var err error
+
+	if isAuthenticated {
+		// Search tracks with favorite status for authenticated users
+		tracks, err = repo.SearchTracksWithFavorites(query, userID, limit, offset)
+	} else {
+		// Search tracks without favorite status for unauthenticated users
+		tracks, err = repo.SearchTracks(query, limit, offset)
+	}
+
 	if err != nil {
 		slog.Error("Failed to search tracks", "error", err)
 		utils.JSONError(w, api_errors.ErrInternalServer, "failed to search tracks", http.StatusInternalServerError)
@@ -628,4 +656,143 @@ func (r *Router) UpdateTrackHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	utils.JSONSuccess(w, track, http.StatusOK)
+}
+
+// LikeTrackHandler godoc
+// @Summary Like a track
+// @Description Adds a track to user's favorites
+// @Tags Protected
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Track ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/tracks/{id}/like [post]
+func (r *Router) LikeTrackHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(req)
+	trackID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid track id", http.StatusBadRequest)
+		return
+	}
+
+	repo := repository.NewRepository(r.Db)
+
+	// Check if track exists
+	track, err := repo.GetTrackByID(trackID)
+	if err != nil || track == nil {
+		utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
+		return
+	}
+
+	// Like the track
+	if err := repo.LikeTrack(userID, trackID); err != nil {
+		slog.Error("Failed to like track", "error", err, "user_id", userID, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to like track", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, map[string]string{"message": "track liked successfully"}, http.StatusOK)
+}
+
+// UnlikeTrackHandler godoc
+// @Summary Unlike a track
+// @Description Removes a track from user's favorites
+// @Tags Protected
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Track ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/tracks/{id}/unlike [post]
+func (r *Router) UnlikeTrackHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(req)
+	trackID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.JSONError(w, api_errors.ErrBadRequest, "invalid track id", http.StatusBadRequest)
+		return
+	}
+
+	repo := repository.NewRepository(r.Db)
+
+	// Check if track exists
+	track, err := repo.GetTrackByID(trackID)
+	if err != nil || track == nil {
+		utils.JSONError(w, api_errors.ErrNotFound, "track not found", http.StatusNotFound)
+		return
+	}
+
+	// Unlike the track
+	if err := repo.UnlikeTrack(userID, trackID); err != nil {
+		slog.Error("Failed to unlike track", "error", err, "user_id", userID, "track_id", trackID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to unlike track", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONSuccess(w, map[string]string{"message": "track unliked successfully"}, http.StatusOK)
+}
+
+// GetFavoritesHandler godoc
+// @Summary Get user's favorite tracks
+// @Description Retrieves all tracks liked by the user
+// @Tags Protected
+// @Produce json
+// @Security ApiKeyAuth
+// @Param limit query int false "Number of tracks (default: 50)"
+// @Param offset query int false "Offset for pagination (default: 0)"
+// @Success 200 {array} models.TrackWithArtist
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /api/favorites [get]
+func (r *Router) GetFavoritesHandler(w http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserID(req.Context())
+	if !ok {
+		utils.JSONError(w, api_errors.ErrUnauthorized, "no user in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse query parameters
+	limit := 50
+	offset := 0
+
+	if l := req.URL.Query().Get("limit"); l != "" {
+		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	if o := req.URL.Query().Get("offset"); o != "" {
+		if parsedOffset, err := strconv.Atoi(o); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	repo := repository.NewRepository(r.Db)
+
+	// Get user's favorite tracks
+	tracks, err := repo.GetUserFavoriteTracks(userID, limit, offset)
+	if err != nil {
+		slog.Error("Failed to get favorite tracks", "error", err, "user_id", userID)
+		utils.JSONError(w, api_errors.ErrInternalServer, "failed to get favorite tracks", http.StatusInternalServerError)
+		return
+	}
+
+	if tracks == nil {
+		tracks = []models.TrackWithArtist{}
+	}
+
+	utils.JSONSuccess(w, tracks, http.StatusOK)
 }

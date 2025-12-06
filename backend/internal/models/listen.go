@@ -25,6 +25,7 @@ type RecentlyPlayedTrack struct {
 	Genre         string    `json:"genre,omitempty"`
 	Status        string    `json:"status"`
 	PlayedAt      time.Time `json:"played_at"`
+	IsFavorited   bool      `json:"is_favorited,omitempty"`
 }
 
 // RecordListenRequest is the request body for recording a listen

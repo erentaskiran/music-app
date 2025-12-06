@@ -370,6 +370,7 @@ export interface TrackResponse {
     status: string
     created_at: string
     updated_at: string
+    is_favorited?: boolean
 }
 
 /**
@@ -437,6 +438,7 @@ export interface RecentlyPlayedResponse {
     genre?: string
     status: string
     played_at: string
+    is_favorited?: boolean
 }
 
 /**
@@ -683,5 +685,32 @@ export async function changePassword(data: ChangePasswordData): Promise<{ messag
     return makeAuthenticatedRequest('/profile/password', {
         method: 'PUT',
         body: JSON.stringify(data),
+    })
+}
+
+/**
+ * Like a track (add to favorites)
+ */
+export async function likeTrack(trackId: number): Promise<void> {
+    return makeAuthenticatedRequest(`/tracks/${trackId}/like`, {
+        method: 'POST',
+    })
+}
+
+/**
+ * Unlike a track (remove from favorites)
+ */
+export async function unlikeTrack(trackId: number): Promise<void> {
+    return makeAuthenticatedRequest(`/tracks/${trackId}/unlike`, {
+        method: 'POST',
+    })
+}
+
+/**
+ * Get user's favorite tracks
+ */
+export async function getUserFavorites(limit = 50, offset = 0): Promise<TrackResponse[]> {
+    return makeAuthenticatedRequest(`/favorites?limit=${limit}&offset=${offset}`, {
+        method: 'GET',
     })
 }

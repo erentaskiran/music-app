@@ -15,6 +15,7 @@ type Track struct {
 	Status         string    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	IsFavorited    bool      `json:"is_favorited,omitempty"`
 }
 
 // TrackWithArtist includes artist information along with track data
@@ -32,6 +33,7 @@ type TrackWithArtist struct {
 	Status         string    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	IsFavorited    bool      `json:"is_favorited,omitempty"`
 }
 
 type CreateTrackRequest struct {

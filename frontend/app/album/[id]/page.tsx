@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { usePlayer } from '@/contexts/player-context'
-import { getAlbum } from '@/lib/api'
+import { getAlbum, likeTrack, unlikeTrack } from '@/lib/api'
 import { AlbumWithTracks } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Play, Pause, Clock } from 'lucide-react'
+import { Play, Pause, Clock, Heart } from 'lucide-react'
 import Image from 'next/image'
 import { formatDuration } from '@/lib/utils'
 
@@ -15,6 +15,8 @@ export default function AlbumPage() {
   const id = parseInt(params.id as string)
   const [album, setAlbum] = useState<AlbumWithTracks | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
   const { playTrack, currentTrack, isPlaying } = usePlayer()
 
   useEffect(() => {
@@ -22,6 +24,15 @@ export default function AlbumPage() {
       try {
         const data = await getAlbum(id)
         setAlbum(data)
+        
+        // Initialize liked tracks from API response
+        const liked = new Set<number>()
+        data.tracks?.forEach((track: any) => {
+          if (track.is_favorited) {
+            liked.add(track.id)
+          }
+        })
+        setLikedTracks(liked)
       } catch (error) {
         console.error('Failed to load album:', error)
       } finally {
@@ -37,6 +48,35 @@ export default function AlbumPage() {
   const handlePlayAlbum = () => {
     if (album.tracks && album.tracks.length > 0) {
       playTrack(album.tracks[0], album.tracks)
+    }
+  }
+
+  const handleToggleFavorite = async (e: React.MouseEvent, trackId: number) => {
+    e.stopPropagation()
+    const isCurrentlyLiked = likedTracks.has(trackId)
+    
+    try {
+      setLoadingTrackIds(prev => new Set(prev).add(trackId))
+      
+      if (isCurrentlyLiked) {
+        await unlikeTrack(trackId)
+        setLikedTracks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(trackId)
+          return newSet
+        })
+      } else {
+        await likeTrack(trackId)
+        setLikedTracks(prev => new Set(prev).add(trackId))
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    } finally {
+      setLoadingTrackIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(trackId)
+        return newSet
+      })
     }
   }
 
@@ -120,6 +160,24 @@ export default function AlbumPage() {
               <div className="w-16 text-right text-sm text-muted-foreground">
                 {formatDuration(track.duration)}
               </div>
+              
+              {/* Heart button */}
+              <Button
+                onClick={(e) => handleToggleFavorite(e, track.id)}
+                disabled={loadingTrackIds.has(track.id)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0 ml-2"
+                title={likedTracks.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Heart
+                  className={`w-4 h-4 transition-colors ${
+                    likedTracks.has(track.id)
+                      ? 'fill-green-500 stroke-green-500 text-green-500'
+                      : 'stroke-current'
+                  }`}
+                />
+              </Button>
             </div>
           ))}
           {(!album.tracks || album.tracks.length === 0) && (
