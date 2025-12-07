@@ -144,10 +144,10 @@ func (r *Router) GetAlbumHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	repo := repository.NewRepository(r.Db)
-	
+
 	// Get user ID from context if authenticated
 	userID, isAuthenticated := middleware.GetUserID(req.Context())
-	
+
 	var album interface{}
 	if isAuthenticated {
 		// Get album with favorite status for authenticated users
@@ -156,7 +156,7 @@ func (r *Router) GetAlbumHandler(w http.ResponseWriter, req *http.Request) {
 		// Get album without favorite status for unauthenticated users
 		album, err = repo.GetAlbumByID(id)
 	}
-	
+
 	if err != nil {
 		if err.Error() == "album not found" {
 			utils.JSONError(w, api_errors.ErrNotFound, "album not found", http.StatusNotFound)

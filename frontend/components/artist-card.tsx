@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProfileResponse } from "@/lib/api"

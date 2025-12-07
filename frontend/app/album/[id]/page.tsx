@@ -27,7 +27,7 @@ export default function AlbumPage() {
         
         // Initialize liked tracks from API response
         const liked = new Set<number>()
-        data.tracks?.forEach((track: any) => {
+        data.tracks?.forEach((track: Track) => {
           if (track.is_favorited) {
             liked.add(track.id)
           }

@@ -7,15 +7,14 @@ import { useAuth } from '@/lib/auth'
 import { Navbar } from '@/components/navbar'
 import { Sidebar } from '@/components/sidebar'
 import { Button } from '@/components/ui/button'
-import { Heart, ArrowLeft, Play, Pause, Music2 } from 'lucide-react'
+import { Heart, Play, Pause, Music2 } from 'lucide-react'
 import { getUserFavorites, likeTrack, unlikeTrack, TrackResponse } from '@/lib/api'
-import Image from 'next/image'
 import { toast } from 'sonner'
 
 export default function LikedSongsPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
+  const { playTrack, currentTrack, isPlaying } = usePlayer()
   
   const [tracks, setTracks] = useState<TrackResponse[]>([])
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())

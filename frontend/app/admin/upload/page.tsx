@@ -301,6 +301,7 @@ function MusicUploadPage() {
                     className="hidden"
                   />
                   {coverPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={coverPreview} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover opacity-50 hover:opacity-40 transition-opacity" />
                   ) : null}
                   <div className="flex flex-col items-center gap-3 z-10">
