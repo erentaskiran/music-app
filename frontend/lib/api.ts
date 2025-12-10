@@ -733,7 +733,7 @@ export async function getArtistDetails(artistId: number) {
  */
 export async function getArtistTopTracks(artistId: number, limit = 10) {
     const token = Cookies.get('jwt')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
     
     return makeRequest(`/artists/${artistId}/top-tracks?limit=${limit}`, {
         method: 'GET',
@@ -755,7 +755,7 @@ export async function getArtistAlbums(artistId: number) {
  */
 export async function getArtistTracks(artistId: number) {
     const token = Cookies.get('jwt')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
     
     return makeRequest(`/artists/${artistId}/tracks`, {
         method: 'GET',
