@@ -64,6 +64,32 @@ export interface AlbumWithTracks extends Album {
   tracks: Track[]
 }
 
+export interface Artist {
+  id: number
+  username: string
+  email: string
+  avatar_url?: string
+  bio?: string
+  role: string
+  created_at: string
+}
+
+export interface ArtistDetails extends Artist {
+  total_tracks: number
+  total_albums: number
+  total_listens: number
+}
+
+export interface ArtistWithStats {
+  id: number
+  username: string
+  avatar_url?: string
+  bio?: string
+  total_tracks: number
+  total_albums: number
+  total_listens: number
+}
+
 export interface PlayerState {
   currentTrack: Track | null
   isPlaying: boolean

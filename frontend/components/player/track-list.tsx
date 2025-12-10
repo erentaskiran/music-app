@@ -6,6 +6,7 @@ import { Track } from '@/lib/types'
 import { Music2, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { likeTrack, unlikeTrack, isAuthenticated } from '@/lib/api'
 
@@ -134,9 +135,13 @@ export function TrackList({ tracks }: TrackListProps) {
               }`}>
                 {track.title}
               </h4>
-              <p className="text-xs text-muted-foreground truncate">
+              <Link 
+                href={`/artist/${track.artist_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-muted-foreground truncate hover:text-foreground hover:underline inline-block max-w-full"
+              >
                 {track.artist_name || `Artist #${track.artist_id}`}
-              </p>
+              </Link>
             </div>
 
             {/* Genre */}

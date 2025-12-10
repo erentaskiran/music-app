@@ -2,10 +2,11 @@
 
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
-import { searchTracks, searchUsers, makeRequest, ProfileResponse, likeTrack, unlikeTrack } from "@/lib/api"
-import { Track, Album } from "@/lib/types"
+import { searchTracks, searchArtists, makeRequest, likeTrack, unlikeTrack } from "@/lib/api"
+import { Track, Album, ArtistWithStats } from "@/lib/types"
 import { usePlayer } from "@/contexts/player-context"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
@@ -27,7 +28,7 @@ function SearchResults() {
   const query = searchParams.get("q")
   const [tracks, setTracks] = useState<Track[]>([])
   const [albums, setAlbums] = useState<Album[]>([])
-  const [artists, setArtists] = useState<ProfileResponse[]>([])
+  const [artists, setArtists] = useState<ArtistWithStats[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
   const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
@@ -50,7 +51,7 @@ function SearchResults() {
           const [tracksData, albumsData, artistsData] = await Promise.all([
             searchTracks(query),
             makeRequest(`/search/albums?q=${encodeURIComponent(query)}`),
-            searchUsers(query)
+            searchArtists(query)
           ])
           const tracksArray = tracksData as unknown as Track[]
           setTracks(tracksArray)
@@ -223,9 +224,13 @@ function SearchResults() {
                           <div className={`font-medium truncate ${currentTrack?.id === track.id ? "text-primary" : ""}`}>
                             {track.title}
                           </div>
-                          <div className="text-sm text-muted-foreground truncate">
+                          <Link
+                            href={`/artist/${track.artist_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm text-muted-foreground truncate hover:text-foreground hover:underline inline-block max-w-full"
+                          >
                             {track.artist_name}
-                          </div>
+                          </Link>
                         </div>
 
                         <div className="hidden md:block text-sm text-muted-foreground w-1/4 truncate">
