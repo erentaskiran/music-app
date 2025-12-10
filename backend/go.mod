@@ -11,7 +11,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
-	golang.org/x/crypto v0.44.0
+	golang.org/x/crypto v0.45.0
 )
 
 require (
