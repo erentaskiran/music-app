@@ -61,6 +61,13 @@ func (r *Router) NewRouter() *mux.Router {
 	router.HandleFunc("/api/albums/{id}", r.GetAlbumHandler).Methods(http.MethodGet, http.MethodOptions)
 	router.HandleFunc("/api/tracks/{id}/stream", r.StreamTrackHandler).Methods(http.MethodGet, http.MethodOptions)
 
+	// Artist routes (public)
+	router.HandleFunc("/api/artists/{id}", r.GetArtistHandler).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/artists/{id}/top-tracks", r.GetArtistTopTracksHandler).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/artists/{id}/albums", r.GetArtistAlbumsHandler).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/artists/{id}/tracks", r.GetArtistTracksHandler).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/search/artists", r.SearchArtistsHandler).Methods(http.MethodGet, http.MethodOptions)
+
 	// Protected routes (authenticated users)
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.HandleFunc("/me", r.MeHandler).Methods(http.MethodGet, http.MethodOptions)

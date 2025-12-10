@@ -714,3 +714,60 @@ export async function getUserFavorites(limit = 50, offset = 0): Promise<TrackRes
         method: 'GET',
     })
 }
+
+// =====================
+// Artist API Functions
+// =====================
+
+/**
+ * Gets detailed information about a specific artist
+ */
+export async function getArtistDetails(artistId: number) {
+    return makeRequest(`/artists/${artistId}`, {
+        method: 'GET',
+    })
+}
+
+/**
+ * Gets an artist's top tracks based on listen count
+ */
+export async function getArtistTopTracks(artistId: number, limit = 10) {
+    const token = Cookies.get('jwt')
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+    
+    return makeRequest(`/artists/${artistId}/top-tracks?limit=${limit}`, {
+        method: 'GET',
+        headers,
+    })
+}
+
+/**
+ * Gets all albums for a specific artist
+ */
+export async function getArtistAlbums(artistId: number) {
+    return makeRequest(`/artists/${artistId}/albums`, {
+        method: 'GET',
+    })
+}
+
+/**
+ * Gets all tracks for a specific artist
+ */
+export async function getArtistTracks(artistId: number) {
+    const token = Cookies.get('jwt')
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+    
+    return makeRequest(`/artists/${artistId}/tracks`, {
+        method: 'GET',
+        headers,
+    })
+}
+
+/**
+ * Searches for artists by username
+ */
+export async function searchArtists(query: string, limit = 20) {
+    return makeRequest(`/search/artists?q=${encodeURIComponent(query)}&limit=${limit}`, {
+        method: 'GET',
+    })
+}
