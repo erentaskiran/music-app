@@ -112,7 +112,7 @@ export default function AlbumDetailsPage() {
         <div className="flex flex-col md:flex-row gap-8 items-start">
           {/* Album Info */}
           <div className="w-full md:w-1/3 space-y-6">
-            <Card className="bg-[#0a0a0a] border-gray-800 overflow-hidden">
+            <Card className="bg-card border-border overflow-hidden">
               <div className="aspect-square relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -123,22 +123,22 @@ export default function AlbumDetailsPage() {
               </div>
               <CardContent className="p-6 space-y-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-white mb-2">{album.title}</h1>
-                  <div className="flex items-center text-gray-400 gap-2">
+                  <h1 className="text-2xl font-bold text-foreground mb-2">{album.title}</h1>
+                  <div className="flex items-center text-muted-foreground gap-2">
                     <User className="w-4 h-4" />
                     <span className="text-lg">{album.artist_name}</span>
                   </div>
                 </div>
                 
                 {album.release_date && (
-                  <div className="flex items-center text-sm text-gray-500 gap-2">
+                  <div className="flex items-center text-sm text-muted-foreground gap-2">
                     <Calendar className="w-4 h-4" />
                     <span>Released: {new Date(album.release_date).getFullYear()}</span>
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-800">
-                  <div className="text-sm text-gray-500">
+                <div className="pt-4 border-t border-border">
+                  <div className="text-sm text-muted-foreground">
                     {album.tracks?.length || 0} Tracks
                   </div>
                 </div>
@@ -148,47 +148,47 @@ export default function AlbumDetailsPage() {
 
           {/* Tracks List */}
           <div className="w-full md:w-2/3">
-            <Card className="bg-[#0a0a0a] border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-xl text-white">Tracks</CardTitle>
+                <CardTitle className="text-xl text-foreground">Tracks</CardTitle>
                 <Dialog open={isAddingTrack} onOpenChange={setIsAddingTrack}>
                   <DialogTrigger asChild>
-                    <Button className="bg-purple-600 hover:bg-purple-700">
+                    <Button className="bg-primary hover:bg-primary/90">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Track
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-gray-900 border-gray-800 text-white">
+                  <DialogContent className="bg-popover border-border text-foreground">
                     <DialogHeader>
                       <DialogTitle>Add Track to Album</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           placeholder="Search tracks..."
                           value={searchQuery}
                           onChange={(e) => handleSearchTracks(e.target.value)}
-                          className="pl-10 bg-gray-800 border-gray-700"
+                          className="pl-10 bg-muted/50 border-input"
                         />
                       </div>
                       <div className="max-h-[300px] overflow-y-auto space-y-2">
                         {searchResults.map((track) => (
                           <div
                             key={track.id}
-                            className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors"
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-accent transition-colors"
                           >
                             <div className="flex items-center gap-3">
-                              <Music className="w-4 h-4 text-gray-400" />
+                              <Music className="w-4 h-4 text-muted-foreground" />
                               <div>
                                 <div className="font-medium">{track.title}</div>
-                                <div className="text-xs text-gray-400">{track.artist_name}</div>
+                                <div className="text-xs text-muted-foreground">{track.artist_name}</div>
                               </div>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="hover:text-purple-400"
+                              className="hover:text-primary"
                               onClick={() => handleAddTrack(track.id)}
                             >
                               <Plus className="w-4 h-4" />
@@ -196,7 +196,7 @@ export default function AlbumDetailsPage() {
                           </div>
                         ))}
                         {searchQuery && searchResults.length === 0 && (
-                          <div className="text-center text-gray-500 py-4">
+                          <div className="text-center text-muted-foreground py-4">
                             No tracks found
                           </div>
                         )}
@@ -211,13 +211,13 @@ export default function AlbumDetailsPage() {
                     album.tracks.map((track, index) => (
                       <div
                         key={track.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-900 hover:bg-gray-800/50 transition-colors group"
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
                       >
                         <div className="flex items-center gap-4">
-                          <span className="text-gray-500 w-6 text-center">{index + 1}</span>
+                          <span className="text-muted-foreground w-6 text-center">{index + 1}</span>
                           <div>
-                            <div className="font-medium text-white">{track.title}</div>
-                            <div className="text-sm text-gray-500">{formatDuration(track.duration)}</div>
+                            <div className="font-medium text-foreground">{track.title}</div>
+                            <div className="text-sm text-muted-foreground">{formatDuration(track.duration)}</div>
                           </div>
                         </div>
                         <Button
@@ -231,7 +231,7 @@ export default function AlbumDetailsPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-muted-foreground">
                       No tracks in this album yet.
                     </div>
                   )}

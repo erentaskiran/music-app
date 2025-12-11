@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils"
 import { logout, getCurrentUser } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { toast } from "sonner"
+import { PlayerProvider } from '@/contexts/player-context'
+import { PlaylistProvider } from '@/contexts/playlist-context'
+import { MusicPlayerBar } from '@/components/player/music-player-bar'
 
 const navItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -78,8 +81,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // Show nothing while checking auth (except for auth pages)
   if (!isAuthPage && (isLoading || !isAuthenticated || !isAdmin)) {
     return (
-      <div className="min-h-screen bg-[#0c0c0d] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -92,127 +95,132 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const currentUser = getCurrentUser()
 
   return (
-    <div className="min-h-screen bg-[#0c0c0d] text-white font-inter">
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="bg-[#0a0a0a] border border-gray-800"
-        >
-          {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
-      </div>
+    <PlaylistProvider>
+      <PlayerProvider>
+        <div className="min-h-screen bg-background text-foreground font-inter">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden fixed top-4 left-4 z-50">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="bg-background border border-border"
+            >
+              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
 
-      {/* Sidebar */}
-      <AnimatePresence>
-        {(isSidebarOpen || true) && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ duration: 0.3 }}
-            className={cn(
-              "fixed left-0 top-0 h-screen bg-[#0a0a0a] border-r border-gray-800 z-40",
-              "lg:w-64 w-64",
-              isSidebarOpen ? "block" : "hidden lg:block"
-            )}
-          >
-            <div className="flex flex-col h-full p-6">
-              {/* Logo */}
-              <Link href="/admin/dashboard" className="flex items-center gap-3 mb-8">
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
-                  <Music2 className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold">Musicly</span>
-              </Link>
+          {/* Sidebar */}
+          <AnimatePresence>
+            {(isSidebarOpen || true) && (
+              <motion.aside
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  "fixed left-0 top-0 h-screen bg-background border-r border-border z-40",
+                  "lg:w-64 w-64",
+                  isSidebarOpen ? "block" : "hidden lg:block"
+                )}
+              >
+                <div className="flex flex-col h-full p-6">
+                  {/* Logo */}
+                  <Link href="/admin/dashboard" className="flex items-center gap-3 mb-8">
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                      <Music2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <span className="text-2xl font-bold">Musicly</span>
+                  </Link>
 
-              {/* Navigation */}
-              <nav className="flex-1 space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsSidebarOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                        isActive
-                          ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border border-purple-500/30"
-                          : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                      )}
+                  {/* Navigation */}
+                  <nav className="flex-1 space-y-2">
+                    {navItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                            isActive
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                          )}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </nav>
+
+                  {/* User Section */}
+                  <div className="pt-4 border-t border-border">
+                    <div className="flex items-center gap-3 px-4 py-3 mb-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Admin</p>
+                        <p className="text-xs text-muted-foreground">{currentUser?.email || 'admin@musicly.com'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Logout Button */}
+                    <Button
+                      onClick={handleLogout}
+                      variant="ghost"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-accent"
                     >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-medium">Logout</span>
+                    </Button>
+                  </div>
+                </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>
 
-              {/* User Section */}
-              <div className="pt-4 border-t border-gray-800">
-                <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white">
+          {/* Mobile Overlay */}
+          {isSidebarOpen && (
+            <div
+              className="lg:hidden fixed inset-0 bg-black/50 z-30"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main Content */}
+          <div className="lg:ml-64 min-h-screen flex flex-col">
+            {/* Top Bar */}
+            <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg border-b border-border">
+              <div className="flex items-center justify-between px-6 lg:px-8 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="lg:hidden w-10" /> {/* Spacer for mobile menu button */}
+                  <h2 className="text-xl font-semibold">
+                    {getPageTitle()}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-9 h-9">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
                       {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Admin</p>
-                    <p className="text-xs text-gray-400">{currentUser?.email || 'admin@musicly.com'}</p>
-                  </div>
                 </div>
-                
-                {/* Logout Button */}
-                <Button
-                  onClick={handleLogout}
-                  variant="ghost"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/50"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span className="font-medium">Logout</span>
-                </Button>
               </div>
-            </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+            </header>
 
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content */}
-      <div className="lg:ml-64 min-h-screen">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-20 bg-[#0a0a0a]/80 backdrop-blur-lg border-b border-gray-800">
-          <div className="flex items-center justify-between px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-4">
-              <div className="lg:hidden w-10" /> {/* Spacer for mobile menu button */}
-              <h2 className="text-xl font-semibold">
-                {getPageTitle()}
-              </h2>
-            </div>
-            <div className="flex items-center gap-4">
-              <Avatar className="w-9 h-9">
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
-                  {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            {/* Page Content */}
+            <main className="p-6 lg:p-8 pb-24 flex-1">{children}</main>
           </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="p-6 lg:p-8">{children}</main>
-      </div>
-    </div>
+          <MusicPlayerBar />
+        </div>
+      </PlayerProvider>
+    </PlaylistProvider>
   )
 }

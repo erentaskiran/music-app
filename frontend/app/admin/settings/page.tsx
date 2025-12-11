@@ -173,7 +173,7 @@ function SettingsPage() {
   if (isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -185,15 +185,15 @@ function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-2xl text-white flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                <SettingsIcon className="w-6 h-6" />
+            <CardTitle className="text-2xl text-foreground flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <SettingsIcon className="w-6 h-6 text-primary" />
               </div>
               Settings
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-muted-foreground">
               Manage your account settings and preferences
             </CardDescription>
           </CardHeader>
@@ -206,9 +206,9 @@ function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg text-white flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <User className="w-5 h-5" />
               Profile Information
             </CardTitle>
@@ -216,7 +216,7 @@ function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-200">
+                <Label htmlFor="name" className="text-foreground">
                   Full Name
                 </Label>
                 <Input
@@ -228,7 +228,7 @@ function SettingsPage() {
                       setProfileErrors({ ...profileErrors, fullName: undefined })
                     }
                   }}
-                  className={`bg-[#1a1a1a] border-gray-700 text-white ${
+                  className={`bg-muted/50 border-input text-foreground ${
                     profileErrors.fullName ? "border-red-500" : ""
                   }`}
                   placeholder="Enter your full name"
@@ -238,7 +238,7 @@ function SettingsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-200">
+                <Label htmlFor="email" className="text-foreground">
                   Email Address
                 </Label>
                 <Input
@@ -251,7 +251,7 @@ function SettingsPage() {
                       setProfileErrors({ ...profileErrors, email: undefined })
                     }
                   }}
-                  className={`bg-[#1a1a1a] border-gray-700 text-white ${
+                  className={`bg-muted/50 border-input text-foreground ${
                     profileErrors.email ? "border-red-500" : ""
                   }`}
                   placeholder="Enter your email"
@@ -262,7 +262,7 @@ function SettingsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bio" className="text-gray-200">
+              <Label htmlFor="bio" className="text-foreground">
                 Bio
               </Label>
               <Input
@@ -270,13 +270,13 @@ function SettingsPage() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself"
-                className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <Button
               onClick={handleSaveProfile}
               disabled={isSavingProfile}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isSavingProfile ? (
                 <>
@@ -299,14 +299,14 @@ function SettingsPage() {
       >
         <Card className="bg-[#0a0a0a] border-gray-800">
           <CardHeader>
-            <CardTitle className="text-lg text-white flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <Shield className="w-5 h-5" />
               Security
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="current-password" className="text-gray-200">
+              <Label htmlFor="current-password" className="text-foreground">
                 Current Password
               </Label>
               <Input
@@ -320,7 +320,7 @@ function SettingsPage() {
                   }
                 }}
                 placeholder="••••••••"
-                className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                className={`bg-muted/50 border-input text-foreground placeholder:text-muted-foreground ${
                   passwordErrors.current ? "border-red-500" : ""
                 }`}
               />
@@ -330,7 +330,7 @@ function SettingsPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-gray-200">
+                <Label htmlFor="new-password" className="text-foreground">
                   New Password
                 </Label>
                 <Input
@@ -344,7 +344,7 @@ function SettingsPage() {
                     }
                   }}
                   placeholder="••••••••"
-                  className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                  className={`bg-muted/50 border-input text-foreground placeholder:text-muted-foreground ${
                     passwordErrors.new ? "border-red-500" : ""
                   }`}
                 />
@@ -353,7 +353,7 @@ function SettingsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-gray-200">
+                <Label htmlFor="confirm-password" className="text-foreground">
                   Confirm Password
                 </Label>
                 <Input
@@ -367,7 +367,7 @@ function SettingsPage() {
                     }
                   }}
                   placeholder="••••••••"
-                  className={`bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 ${
+                  className={`bg-muted/50 border-input text-foreground placeholder:text-muted-foreground ${
                     passwordErrors.confirm ? "border-red-500" : ""
                   }`}
                 />
@@ -379,7 +379,7 @@ function SettingsPage() {
             <Button
               onClick={handleChangePassword}
               disabled={isSavingPassword}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isSavingPassword ? (
                 <>
@@ -400,34 +400,34 @@ function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg text-white flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <Bell className="w-5 h-5" />
               Notifications
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a1a] border border-gray-800">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
               <div>
-                <p className="font-medium text-white">Email Notifications</p>
-                <p className="text-sm text-gray-400">Receive email updates about new uploads</p>
+                <p className="font-medium text-foreground">Email Notifications</p>
+                <p className="text-sm text-muted-foreground">Receive email updates about new uploads</p>
               </div>
               <input
                 type="checkbox"
                 defaultChecked
-                className="w-5 h-5 rounded bg-[#1a1a1a] border-gray-700"
+                className="w-5 h-5 rounded bg-muted/50 border-input"
               />
             </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a1a] border border-gray-800">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
               <div>
-                <p className="font-medium text-white">Push Notifications</p>
-                <p className="text-sm text-gray-400">Get notified about important events</p>
+                <p className="font-medium text-foreground">Push Notifications</p>
+                <p className="text-sm text-muted-foreground">Get notified about important events</p>
               </div>
               <input
                 type="checkbox"
                 defaultChecked
-                className="w-5 h-5 rounded bg-[#1a1a1a] border-gray-700"
+                className="w-5 h-5 rounded bg-muted/50 border-input"
               />
             </div>
           </CardContent>
@@ -440,9 +440,9 @@ function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg text-white flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <Palette className="w-5 h-5" />
               Appearance
             </CardTitle>
@@ -451,12 +451,12 @@ function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <p className="font-medium text-white">Theme</p>
-                  <p className="text-sm text-gray-400">Currently using dark theme</p>
+                  <p className="font-medium text-foreground">Theme</p>
+                  <p className="text-sm text-muted-foreground">Currently using dark theme</p>
                 </div>
                 <Button
                   variant="outline"
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                  className="border-input text-muted-foreground hover:bg-accent"
                 >
                   Dark
                 </Button>

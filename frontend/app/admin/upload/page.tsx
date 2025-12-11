@@ -222,15 +222,15 @@ function MusicUploadPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-2xl text-white flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                <Upload className="w-6 h-6" />
+            <CardTitle className="text-2xl text-foreground flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Upload className="w-6 h-6 text-primary" />
               </div>
               Upload Music
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-muted-foreground">
               Upload your music files to the streaming platform
             </CardDescription>
           </CardHeader>
@@ -238,7 +238,7 @@ function MusicUploadPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* File Upload Area */}
               <div className="space-y-2">
-                <Label className="text-gray-200">Music File *</Label>
+                <Label className="text-foreground">Music File *</Label>
                 <div
                   onDragOver={(e) => handleDragOver(e, setIsDragging)}
                   onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
@@ -247,8 +247,8 @@ function MusicUploadPage() {
                   className={`
                     border-2 border-dashed rounded-lg p-8 transition-all duration-300 cursor-pointer h-48 flex flex-col items-center justify-center
                     ${isDragging 
-                      ? "border-purple-500 bg-purple-500/10" 
-                      : "border-gray-700 hover:border-gray-600 bg-[#1a1a1a]"
+                      ? "border-primary bg-primary/10" 
+                      : "border-input hover:border-ring bg-muted/50"
                     }
                   `}
                 >
@@ -260,15 +260,15 @@ function MusicUploadPage() {
                     className="hidden"
                   />
                   <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                      <Music className="w-6 h-6 text-purple-400" />
+                    <div className="p-3 rounded-full bg-primary/10">
+                      <Music className="w-6 h-6 text-primary" />
                     </div>
                     <div className="text-center">
-                      <p className="text-white font-medium text-sm">
+                      <p className="text-foreground font-medium text-sm">
                         {selectedFile ? selectedFile.name : "Click to upload audio"}
                       </p>
                       {!selectedFile && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           MP3, WAV, FLAC
                         </p>
                       )}
@@ -279,7 +279,7 @@ function MusicUploadPage() {
 
               {/* Cover Image Upload Area */}
               <div className="space-y-2">
-                <Label className="text-gray-200">Cover Image (Optional)</Label>
+                <Label className="text-foreground">Cover Image (Optional)</Label>
                 <div
                   onDragOver={(e) => handleDragOver(e, setIsDraggingCover)}
                   onDragLeave={(e) => handleDragLeave(e, setIsDraggingCover)}
@@ -288,8 +288,8 @@ function MusicUploadPage() {
                   className={`
                     border-2 border-dashed rounded-lg p-8 transition-all duration-300 cursor-pointer h-48 flex flex-col items-center justify-center relative overflow-hidden
                     ${isDraggingCover 
-                      ? "border-purple-500 bg-purple-500/10" 
-                      : "border-gray-700 hover:border-gray-600 bg-[#1a1a1a]"
+                      ? "border-primary bg-primary/10" 
+                      : "border-input hover:border-ring bg-muted/50"
                     }
                   `}
                 >
@@ -305,15 +305,15 @@ function MusicUploadPage() {
                     <img src={coverPreview} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover opacity-50 hover:opacity-40 transition-opacity" />
                   ) : null}
                   <div className="flex flex-col items-center gap-3 z-10">
-                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                      <ImageIcon className="w-6 h-6 text-purple-400" />
+                    <div className="p-3 rounded-full bg-primary/10">
+                      <ImageIcon className="w-6 h-6 text-primary" />
                     </div>
                     <div className="text-center">
-                      <p className="text-white font-medium text-sm">
+                      <p className="text-foreground font-medium text-sm">
                         {selectedCover ? "Change Cover" : "Click to upload cover"}
                       </p>
                       {!selectedCover && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           JPG, PNG
                         </p>
                       )}
@@ -328,17 +328,17 @@ function MusicUploadPage() {
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="p-4 rounded-lg bg-[#1a1a1a] border border-gray-800"
+                className="p-4 rounded-lg bg-muted/50 border border-border"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                    <File className="w-6 h-6 text-white" />
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <File className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">
+                    <p className="text-foreground font-medium truncate">
                       {selectedFile.name}
                     </p>
-                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <span>{formatFileSize(selectedFile.size)}</span>
                       {duration > 0 && (
                         <>
@@ -361,7 +361,7 @@ function MusicUploadPage() {
             {/* Form Fields */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-gray-200">
+                <Label htmlFor="title" className="text-foreground">
                   Music Title *
                 </Label>
                 <Input
@@ -369,11 +369,11 @@ function MusicUploadPage() {
                   placeholder="Enter music title"
                   value={musicTitle}
                   onChange={(e) => setMusicTitle(e.target.value)}
-                  className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                  className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="genre" className="text-gray-200">
+                <Label htmlFor="genre" className="text-foreground">
                   Genre (Optional)
                 </Label>
                 <Input
@@ -381,11 +381,11 @@ function MusicUploadPage() {
                   placeholder="Enter genre (e.g. Pop, Rock)"
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
-                  className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                  className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="artist" className="text-gray-200">
+                <Label htmlFor="artist" className="text-foreground">
                   Artist (Optional)
                 </Label>
                 <div className="relative">
@@ -393,7 +393,7 @@ function MusicUploadPage() {
                     id="artist"
                     value={selectedArtist}
                     onChange={(e) => setSelectedArtist(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                    className="w-full h-10 px-3 py-2 bg-muted/50 border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                   >
                     <option value="">Select Artist (Default: You)</option>
                     {artists.map((artist) => (
@@ -402,11 +402,11 @@ function MusicUploadPage() {
                       </option>
                     ))}
                   </select>
-                  <User className="absolute right-3 top-2.5 w-5 h-5 text-gray-500 pointer-events-none" />
+                  <User className="absolute right-3 top-2.5 w-5 h-5 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="album" className="text-gray-200">
+                <Label htmlFor="album" className="text-foreground">
                   Album (Optional)
                 </Label>
                 <div className="relative">
@@ -414,7 +414,7 @@ function MusicUploadPage() {
                     id="album"
                     value={selectedAlbum}
                     onChange={(e) => setSelectedAlbum(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                    className="w-full h-10 px-3 py-2 bg-muted/50 border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                   >
                     <option value="">Select Album (None)</option>
                     {albums.map((album) => (
@@ -423,7 +423,7 @@ function MusicUploadPage() {
                       </option>
                     ))}
                   </select>
-                  <Disc className="absolute right-3 top-2.5 w-5 h-5 text-gray-500 pointer-events-none" />
+                  <Disc className="absolute right-3 top-2.5 w-5 h-5 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
             </div>
@@ -432,7 +432,7 @@ function MusicUploadPage() {
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || !musicTitle.trim() || isUploading || uploadSuccess}
-              className="w-full md:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
             >
               {isUploading ? (
                 <>
@@ -461,26 +461,26 @@ function MusicUploadPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg text-white">Upload Guidelines</CardTitle>
+            <CardTitle className="text-lg text-foreground">Upload Guidelines</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-0.5">•</span>
+                <span className="text-primary mt-0.5">•</span>
                 <span>Supported formats: MP3, WAV, FLAC</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-0.5">•</span>
+                <span className="text-primary mt-0.5">•</span>
                 <span>Maximum file size: 100MB</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-0.5">•</span>
+                <span className="text-primary mt-0.5">•</span>
                 <span>Recommended bitrate: 320kbps for MP3</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-0.5">•</span>
+                <span className="text-primary mt-0.5">•</span>
                 <span>Ensure you have the rights to upload the music</span>
               </li>
             </ul>

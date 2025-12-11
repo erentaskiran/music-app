@@ -167,7 +167,7 @@ function MusicLibraryPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     )
   }
@@ -179,27 +179,27 @@ function MusicLibraryPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="text-2xl text-white flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                  <Music className="w-6 h-6" />
+              <CardTitle className="text-2xl text-foreground flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Music className="w-6 h-6 text-primary" />
                 </div>
                 Music Library
               </CardTitle>
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <div className="relative w-full md:w-72">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search music or artist..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-gray-900/50 border-gray-800 text-white placeholder:text-gray-500 focus:ring-purple-500/50"
+                    className="pl-10 bg-muted/50 border-input text-foreground placeholder:text-muted-foreground focus:ring-primary/50"
                   />
                 </div>
                 <Link href="/admin/albums/create">
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Album
                   </Button>
@@ -212,14 +212,14 @@ function MusicLibraryPage() {
             <div className="hidden md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-gray-800 hover:bg-transparent">
-                    <TableHead className="text-gray-400">Cover</TableHead>
-                    <TableHead className="text-gray-400">Title</TableHead>
-                    <TableHead className="text-gray-400">Artist</TableHead>
-                    <TableHead className="text-gray-400">Duration</TableHead>
-                    <TableHead className="text-gray-400">Uploaded</TableHead>
-                    <TableHead className="text-gray-400">Status</TableHead>
-                    <TableHead className="text-gray-400 text-right">Actions</TableHead>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Cover</TableHead>
+                    <TableHead className="text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-muted-foreground">Artist</TableHead>
+                    <TableHead className="text-muted-foreground">Duration</TableHead>
+                    <TableHead className="text-muted-foreground">Uploaded</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -229,7 +229,7 @@ function MusicLibraryPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
-                      className="border-gray-800 hover:bg-gray-800/50 transition-colors duration-200"
+                      className="border-border hover:bg-accent transition-colors duration-200"
                     >
                       <TableCell>
                         {track.coverImageUrl ? (
@@ -240,15 +240,15 @@ function MusicLibraryPage() {
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <Music className="w-6 h-6 text-white" />
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Music className="w-6 h-6 text-primary" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium text-white">{track.title}</TableCell>
-                      <TableCell className="text-gray-400">{track.artist}</TableCell>
-                      <TableCell className="text-gray-400">{formatDuration(track.duration)}</TableCell>
-                      <TableCell className="text-gray-400">{formatDate(track.uploadDate)}</TableCell>
+                      <TableCell className="font-medium text-foreground">{track.title}</TableCell>
+                      <TableCell className="text-muted-foreground">{track.artist}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDuration(track.duration)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(track.uploadDate)}</TableCell>
                       <TableCell>
                         <Badge
                           className={
@@ -266,9 +266,9 @@ function MusicLibraryPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditClick(track)}
-                            className="hover:bg-gray-700"
+                            className="hover:bg-accent"
                           >
-                            <Pencil className="w-4 h-4 text-gray-400" />
+                            <Pencil className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -300,7 +300,7 @@ function MusicLibraryPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="bg-[#1a1a1a] border-gray-800">
+                  <Card className="bg-card border-border">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         {track.coverImageUrl ? (
@@ -311,14 +311,14 @@ function MusicLibraryPage() {
                             className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                            <Music className="w-8 h-8 text-white" />
+                          <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Music className="w-8 h-8 text-primary" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white truncate">{track.title}</h3>
-                          <p className="text-sm text-gray-400">{track.artist}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                          <h3 className="font-semibold text-foreground truncate">{track.title}</h3>
+                          <p className="text-sm text-muted-foreground">{track.artist}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                             <span>{formatDuration(track.duration)}</span>
                             <span>•</span>
                             <span>{formatDate(track.uploadDate)}</span>
@@ -340,9 +340,9 @@ function MusicLibraryPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditClick(track)}
-                            className="hover:bg-gray-700 h-8 w-8"
+                            className="hover:bg-accent h-8 w-8"
                           >
-                            <Pencil className="w-4 h-4 text-gray-400" />
+                            <Pencil className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -367,15 +367,15 @@ function MusicLibraryPage() {
 
             {filteredTracks.length === 0 && tracks.length === 0 && (
               <div className="text-center py-16">
-                <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6">
-                  <Upload className="w-10 h-10 text-gray-500" />
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                  <Upload className="w-10 h-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">No tracks uploaded yet</h3>
-                <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-foreground mb-2">No tracks uploaded yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Start building your music library by uploading your first track. You can manage all your music from here.
                 </p>
                 <Link href="/admin/upload">
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Your First Track
                   </Button>
@@ -385,9 +385,9 @@ function MusicLibraryPage() {
 
             {filteredTracks.length === 0 && tracks.length > 0 && searchQuery && (
               <div className="text-center py-12">
-                <Search className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No results found</h3>
-                <p className="text-gray-400">
+                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+                <p className="text-muted-foreground">
                   No tracks match &quot;{searchQuery}&quot;. Try a different search term.
                 </p>
               </div>
@@ -402,28 +402,28 @@ function MusicLibraryPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardContent className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <p className="text-sm text-gray-400">Total Tracks</p>
-                <p className="text-2xl font-bold text-white mt-1">{tracks.length}</p>
+                <p className="text-sm text-muted-foreground">Total Tracks</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{tracks.length}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">Active</p>
+                <p className="text-sm text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-green-400 mt-1">
                   {tracks.filter((t) => t.status === "active").length}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">Processing</p>
+                <p className="text-sm text-muted-foreground">Processing</p>
                 <p className="text-2xl font-bold text-yellow-400 mt-1">
                   {tracks.filter((t) => t.status === "processing").length}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">Total Duration</p>
-                <p className="text-2xl font-bold text-white mt-1">
+                <p className="text-sm text-muted-foreground">Total Duration</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
                   {formatDuration(tracks.reduce((acc, t) => acc + t.duration, 0))}
                 </p>
               </div>
@@ -434,31 +434,31 @@ function MusicLibraryPage() {
 
       {/* Edit Track Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-gray-800 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">Edit Track</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-muted-foreground">
               Update the details of your track. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-gray-300">Title</Label>
+              <Label htmlFor="title" className="text-foreground">Title</Label>
               <Input
                 id="title"
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="bg-gray-900/50 border-gray-700 text-white"
+                className="bg-muted/50 border-input text-foreground"
                 placeholder="Track title"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="genre" className="text-gray-300">Genre</Label>
+              <Label htmlFor="genre" className="text-foreground">Genre</Label>
               <Input
                 id="genre"
                 value={editForm.genre}
                 onChange={(e) => setEditForm({ ...editForm, genre: e.target.value })}
-                className="bg-gray-900/50 border-gray-700 text-white"
+                className="bg-muted/50 border-input text-foreground"
                 placeholder="Genre (optional)"
               />
             </div>
@@ -467,14 +467,14 @@ function MusicLibraryPage() {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              className="border-input text-muted-foreground hover:bg-accent"
             >
               Cancel
             </Button>
             <Button
               onClick={handleEditSave}
               disabled={isSaving || !editForm.title.trim()}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             >
               {isSaving ? (
                 <>
@@ -491,10 +491,10 @@ function MusicLibraryPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-gray-800 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-red-400">Delete Track</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to delete &quot;{trackToDelete?.title}&quot;? This action cannot be undone and the audio file will be permanently removed.
             </DialogDescription>
           </DialogHeader>
@@ -502,7 +502,7 @@ function MusicLibraryPage() {
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              className="border-input text-muted-foreground hover:bg-accent"
             >
               Cancel
             </Button>

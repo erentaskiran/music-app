@@ -14,8 +14,12 @@ import {
   Volume1,
   Loader2,
   Music2,
+  Heart,
 } from 'lucide-react'
 import Image from 'next/image'
+import { likeTrack, unlikeTrack } from '@/lib/api'
+import { toast } from 'sonner'
+import { useState, useEffect } from 'react'
 
 function formatTime(seconds: number): string {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00'
@@ -41,6 +45,32 @@ export function MusicPlayerBar() {
     nextTrack,
     previousTrack,
   } = usePlayer()
+
+  const [isLiked, setIsLiked] = useState(false)
+
+  useEffect(() => {
+    if (currentTrack) {
+      setIsLiked(!!currentTrack.is_favorited)
+    }
+  }, [currentTrack])
+
+  const handleLikeToggle = async () => {
+    if (!currentTrack) return
+    
+    try {
+      if (isLiked) {
+        await unlikeTrack(currentTrack.id)
+        setIsLiked(false)
+        toast.success('Removed from favorites')
+      } else {
+        await likeTrack(currentTrack.id)
+        setIsLiked(true)
+        toast.success('Added to favorites')
+      }
+    } catch (error) {
+      toast.error('Failed to update favorites')
+    }
+  }
 
   // Don't render if no track is selected
   if (!currentTrack) return null
@@ -109,6 +139,16 @@ export function MusicPlayerBar() {
               {currentTrack.artist_name || `Artist #${currentTrack.artist_id}`}
             </p>
           </div>
+
+          {/* Like Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={handleLikeToggle}
+          >
+            <Heart className="h-4 w-4" fill={isLiked ? "currentColor" : "none"} />
+          </Button>
         </div>
 
         {/* Center: Controls */}

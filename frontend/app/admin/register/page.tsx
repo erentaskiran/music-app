@@ -80,7 +80,7 @@ export default function AdminRegister() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0c0c0d] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,16 +88,16 @@ export default function AdminRegister() {
         className="w-full max-w-md"
       >
         <div className="flex items-center justify-center mb-8 gap-3">
-          <div className="bg-linear-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
-            <Music2 className="w-8 h-8 text-white" />
+          <div className="bg-primary p-3 rounded-xl">
+            <Music2 className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold text-white">Musicly</h1>
+          <h1 className="text-4xl font-bold text-foreground">Musicly</h1>
         </div>
 
-        <Card className="border-gray-800 bg-[#0a0a0a] shadow-2xl">
+        <Card className="border-border bg-card shadow-2xl">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-white">Create Account</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-2xl font-bold text-foreground">Create Account</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Enter your details to create a new admin account
             </CardDescription>
           </CardHeader>
@@ -109,12 +109,12 @@ export default function AdminRegister() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-200">Email</FormLabel>
+                      <FormLabel className="text-foreground">Email</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="admin@musicly.com"
                           type="email"
-                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                           {...field}
                         />
                       </FormControl>
@@ -127,12 +127,12 @@ export default function AdminRegister() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-200">Username</FormLabel>
+                      <FormLabel className="text-foreground">Username</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="admin"
                           type="text"
-                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                           {...field}
                         />
                       </FormControl>
@@ -145,12 +145,12 @@ export default function AdminRegister() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-200">Password</FormLabel>
+                      <FormLabel className="text-foreground">Password</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="••••••••"
                           type="password"
-                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                           {...field}
                         />
                       </FormControl>
@@ -163,12 +163,12 @@ export default function AdminRegister() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-200">Confirm Password</FormLabel>
+                      <FormLabel className="text-foreground">Confirm Password</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="••••••••"
                           type="password"
-                          className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                          className="bg-muted/50 border-input text-foreground placeholder:text-muted-foreground"
                           {...field}
                         />
                       </FormControl>
@@ -178,7 +178,7 @@ export default function AdminRegister() {
                 />
                 <Button
                   type="submit"
-                  className="w-full bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating account..." : "Create Account"}
@@ -187,9 +187,9 @@ export default function AdminRegister() {
             </Form>
             
             <div className="mt-4 text-center">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/admin/login" className="text-purple-500 hover:text-purple-400 font-medium">
+                <Link href="/admin/login" className="text-primary hover:text-primary/80 font-medium">
                   Sign in
                 </Link>
               </p>

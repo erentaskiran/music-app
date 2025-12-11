@@ -122,7 +122,7 @@ export default function CreateAlbumPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>Create New Album</CardTitle>
           <CardDescription>
@@ -137,8 +137,8 @@ export default function CreateAlbumPage() {
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                   isDragging
-                    ? "border-purple-500 bg-purple-500/10"
-                    : "border-gray-700 hover:border-gray-600"
+                    ? "border-primary bg-primary/10"
+                    : "border-input hover:border-ring"
                 }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -181,13 +181,13 @@ export default function CreateAlbumPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 cursor-pointer">
-                    <div className="p-4 rounded-full bg-gray-800">
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    <div className="p-4 rounded-full bg-muted">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
                     </div>
-                    <div className="text-sm text-gray-400">
-                      <span className="text-purple-500 font-medium">Click to upload</span> or drag and drop
+                    <div className="text-sm text-muted-foreground">
+                      <span className="text-primary font-medium">Click to upload</span> or drag and drop
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       PNG, JPG or WEBP (max. 5MB)
                     </p>
                   </div>
@@ -204,7 +204,7 @@ export default function CreateAlbumPage() {
                   placeholder="e.g. Nevermind"
                   value={albumName}
                   onChange={(e) => setAlbumName(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700"
+                  className="bg-muted/50 border-input"
                 />
               </div>
 
@@ -215,9 +215,9 @@ export default function CreateAlbumPage() {
                   placeholder="e.g. Nirvana"
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700"
+                  className="bg-muted/50 border-input"
                 />
-                <p className="text-xs text-gray-500">Must match an existing user username</p>
+                <p className="text-xs text-muted-foreground">Must match an existing user username</p>
               </div>
 
               <div className="space-y-2">
@@ -228,7 +228,7 @@ export default function CreateAlbumPage() {
                   placeholder="e.g. 1991"
                   value={releaseYear}
                   onChange={(e) => setReleaseYear(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700"
+                  className="bg-muted/50 border-input"
                 />
               </div>
 
@@ -236,24 +236,24 @@ export default function CreateAlbumPage() {
               <div className="space-y-2">
                 <Label>Add Tracks</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search tracks to add..."
                     value={searchQuery}
                     onChange={(e) => handleSearchTracks(e.target.value)}
-                    className="pl-10 bg-gray-800/50 border-gray-700"
+                    className="pl-10 bg-muted/50 border-input"
                   />
                   {searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
                       {searchResults.map((track) => (
                         <button
                           key={track.id}
                           type="button"
-                          className="w-full text-left px-4 py-2 hover:bg-gray-800 flex items-center justify-between"
+                          className="w-full text-left px-4 py-2 hover:bg-accent flex items-center justify-between"
                           onClick={() => handleAddTrack(track)}
                         >
                           <span className="truncate">{track.title} - {track.artist_name}</span>
-                          <Plus className="w-4 h-4 text-gray-400" />
+                          <Plus className="w-4 h-4 text-muted-foreground" />
                         </button>
                       ))}
                     </div>
@@ -263,15 +263,15 @@ export default function CreateAlbumPage() {
                 {/* Selected Tracks List */}
                 {selectedTracks.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <Label className="text-xs text-gray-400">Selected Tracks</Label>
+                    <Label className="text-xs text-muted-foreground">Selected Tracks</Label>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                       {selectedTracks.map((track, index) => (
                         <div
                           key={track.id}
-                          className="flex items-center justify-between p-2 rounded bg-gray-800/30 border border-gray-800"
+                          className="flex items-center justify-between p-2 rounded bg-muted/30 border border-border"
                         >
                           <div className="flex items-center gap-3 overflow-hidden">
-                            <span className="text-xs text-gray-500 w-4">{index + 1}</span>
+                            <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
                             <span className="truncate text-sm">{track.title}</span>
                           </div>
                           <Button
@@ -293,7 +293,7 @@ export default function CreateAlbumPage() {
 
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="w-full bg-primary hover:bg-primary/90"
               disabled={isUploading}
             >
               {isUploading ? (

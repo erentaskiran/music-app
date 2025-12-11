@@ -67,27 +67,27 @@ export default function AlbumsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-[#0a0a0a] border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="text-2xl text-white flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                  <Disc className="w-6 h-6" />
+              <CardTitle className="text-2xl text-foreground flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Disc className="w-6 h-6 text-primary" />
                 </div>
                 Albums
               </CardTitle>
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <div className="relative w-full md:w-72">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search albums..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-gray-900/50 border-gray-800 text-white placeholder:text-gray-500 focus:ring-purple-500/50"
+                    className="pl-10 bg-muted/50 border-input text-foreground placeholder:text-muted-foreground focus:ring-primary/50"
                   />
                 </div>
                 <Link href="/admin/albums/create">
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Album
                   </Button>
@@ -101,7 +101,7 @@ export default function AlbumsPage() {
                 <Link key={album.id} href={`/admin/albums/${album.id}`}>
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="group relative bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 hover:border-purple-500/50 transition-colors"
+                    className="group relative bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-colors"
                   >
                     <div className="aspect-square relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -127,13 +127,13 @@ export default function AlbumsPage() {
                       </div>
                     </div>
                     <div className="p-4 space-y-2">
-                      <h3 className="font-semibold text-lg text-white truncate">{album.title}</h3>
-                      <div className="flex items-center text-sm text-gray-400 gap-2">
+                      <h3 className="font-semibold text-lg text-foreground truncate">{album.title}</h3>
+                      <div className="flex items-center text-sm text-muted-foreground gap-2">
                         <User className="w-4 h-4" />
                         <span className="truncate">{album.artist_name}</span>
                       </div>
                       {album.release_date && (
-                        <div className="flex items-center text-xs text-gray-500 gap-2">
+                        <div className="flex items-center text-xs text-muted-foreground gap-2">
                           <Calendar className="w-3 h-3" />
                           <span>{new Date(album.release_date).getFullYear()}</span>
                         </div>
@@ -144,7 +144,7 @@ export default function AlbumsPage() {
               ))}
             </div>
             {filteredAlbums.length === 0 && !isLoading && (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-muted-foreground">
                 No albums found. Create one to get started!
               </div>
             )}

@@ -13,7 +13,7 @@ const stats = [
     value: "1,234",
     icon: Music,
     change: "+12%",
-    color: "from-purple-500 to-pink-500",
+    color: "from-primary/80 to-primary",
   },
   {
     title: "Total Uploads",
@@ -74,9 +74,9 @@ function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              <Card className="bg-[#0a0a0a] border-gray-800 hover:border-gray-700 transition-all duration-300">
+              <Card className="bg-card border-border hover:border-primary/50 transition-all duration-300">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </CardTitle>
                   <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
@@ -84,7 +84,7 @@ function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white">{stat.value}</div>
+                  <div className="text-3xl font-bold text-foreground">{stat.value}</div>
                   <p className="text-xs text-green-500 mt-1">
                     {stat.change} from last month
                   </p>
@@ -103,9 +103,9 @@ function DashboardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Card className="bg-[#0a0a0a] border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-white">Recent Uploads</CardTitle>
+              <CardTitle className="text-foreground">Recent Uploads</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -115,18 +115,18 @@ function DashboardPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800/50 transition-colors duration-200"
+                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors duration-200"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <Music className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Music className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {upload.title}
                       </p>
-                      <p className="text-xs text-gray-400">{upload.artist}</p>
+                      <p className="text-xs text-muted-foreground">{upload.artist}</p>
                     </div>
-                    <div className="text-xs text-gray-500">{upload.date}</div>
+                    <div className="text-xs text-muted-foreground">{upload.date}</div>
                   </motion.div>
                 ))}
               </div>
@@ -140,17 +140,17 @@ function DashboardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Card className="bg-[#0a0a0a] border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-white">Quick Actions</CardTitle>
+              <CardTitle className="text-foreground">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <button className="w-full p-4 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 text-left group">
+              <button className="w-full p-4 rounded-lg bg-primary/5 border border-primary/20 hover:border-primary/50 transition-all duration-200 text-left group">
                 <div className="flex items-center gap-3">
-                  <Upload className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                  <Upload className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                   <div>
-                    <p className="font-medium text-white">Upload New Track</p>
-                    <p className="text-xs text-gray-400">Add music to your library</p>
+                    <p className="font-medium text-foreground">Upload New Track</p>
+                    <p className="text-xs text-muted-foreground">Add music to your library</p>
                   </div>
                 </div>
               </button>
@@ -158,8 +158,8 @@ function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <Music className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
                   <div>
-                    <p className="font-medium text-white">Manage Library</p>
-                    <p className="text-xs text-gray-400">View all music tracks</p>
+                    <p className="font-medium text-foreground">Manage Library</p>
+                    <p className="text-xs text-muted-foreground">View all music tracks</p>
                   </div>
                 </div>
               </button>
@@ -167,8 +167,8 @@ function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <Users className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
                   <div>
-                    <p className="font-medium text-white">User Analytics</p>
-                    <p className="text-xs text-gray-400">View user statistics</p>
+                    <p className="font-medium text-foreground">User Analytics</p>
+                    <p className="text-xs text-muted-foreground">View user statistics</p>
                   </div>
                 </div>
               </button>
