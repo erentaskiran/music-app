@@ -332,6 +332,46 @@ func (pr *PlaylistRepository) UpdatePlaylist(id int, creatorID int, update *mode
 	return playlist, nil
 }
 
+// UpdatePlaylistCover updates a playlist's cover image URL
+func (pr *PlaylistRepository) UpdatePlaylistCover(id int, creatorID int, coverURL string) (*models.Playlist, error) {
+	// Check if playlist belongs to the user
+	var actualCreatorID int
+	err := pr.db.QueryRow("SELECT creator_id FROM playlists WHERE id = $1", id).Scan(&actualCreatorID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("playlist not found")
+		}
+		return nil, err
+	}
+
+	if actualCreatorID != creatorID {
+		return nil, fmt.Errorf("you don't have permission to update this playlist")
+	}
+
+	query := `
+		UPDATE playlists
+		SET cover_url = $1
+		WHERE id = $2
+		RETURNING id, title, creator_id, cover_url, privacy, created_at
+	`
+
+	playlist := &models.Playlist{}
+	err = pr.db.QueryRow(query, coverURL, id).Scan(
+		&playlist.ID,
+		&playlist.Title,
+		&playlist.CreatorID,
+		&playlist.CoverURL,
+		&playlist.Privacy,
+		&playlist.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update playlist cover: %w", err)
+	}
+
+	return playlist, nil
+}
+
 // DeletePlaylist deletes a playlist and its tracks
 func (pr *PlaylistRepository) DeletePlaylist(id int, creatorID int) error {
 	// Check if playlist belongs to the user

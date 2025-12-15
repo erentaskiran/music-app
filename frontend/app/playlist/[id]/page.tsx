@@ -24,9 +24,12 @@ import {
   X,
   Search,
   Play,
-  Heart
+  Heart,
+  Upload,
+  Loader2
 } from 'lucide-react'
-import { searchTracks, likeTrack, unlikeTrack } from '@/lib/api'
+import { searchTracks, likeTrack, unlikeTrack, uploadPlaylistCover } from '@/lib/api'
+import { toast } from 'sonner'
 import type { Track } from '@/lib/types'
 
 export default function PlaylistPage() {
@@ -47,7 +50,9 @@ export default function PlaylistPage() {
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null)
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set())
   const [loadingTrackIds, setLoadingTrackIds] = useState<Set<number>>(new Set())
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (showAddTracks && searchInputRef.current) {
@@ -188,6 +193,40 @@ export default function PlaylistPage() {
     }
   }
 
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Lütfen bir resim dosyası seçin')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Dosya boyutu 10MB\'dan küçük olmalıdır')
+      return
+    }
+
+    setIsUploadingCover(true)
+    try {
+      const updatedPlaylist = await uploadPlaylistCover(playlistId, file)
+      // Update the playlist in context
+      await selectPlaylist(playlistId)
+      toast.success('Kapak fotoğrafı başarıyla yüklendi')
+    } catch (error) {
+      console.error('Failed to upload cover:', error)
+      toast.error('Kapak fotoğrafı yüklenirken hata oluştu')
+    } finally {
+      setIsUploadingCover(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="p-8">
@@ -247,18 +286,38 @@ export default function PlaylistPage() {
           {/* Playlist Header with Cover */}
           <div className="flex gap-4 sm:gap-8 mb-8 sm:mb-12 items-start flex-col sm:flex-row">
             {/* Cover Image */}
-            <div className="flex-shrink-0">
-              <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-2xl flex items-center justify-center flex-shrink-0">
+            <div className="flex-shrink-0 relative group">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverUpload}
+                className="hidden"
+                disabled={isUploadingCover}
+              />
+              <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 aspect-square bg-primary rounded-lg shadow-2xl flex items-center justify-center flex-shrink-0 cursor-pointer transition-all hover:shadow-lg">
                 {selectedPlaylist.cover_url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img 
                     src={selectedPlaylist.cover_url} 
                     alt={selectedPlaylist.title}
-                    className="w-full h-full object-cover rounded-lg"
+                    className="w-full h-full object-cover rounded-lg aspect-square"
                   />
                 ) : (
                   <Music className="h-12 w-12 sm:h-16 sm:w-16 md:h-24 md:w-24 text-white opacity-50" />
                 )}
+                
+                {/* Upload Overlay */}
+                <div 
+                  className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => !isUploadingCover && fileInputRef.current?.click()}
+                >
+                  {isUploadingCover ? (
+                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  ) : (
+                    <Upload className="h-8 w-8 text-white" />
+                  )}
+                </div>
               </div>
             </div>
 

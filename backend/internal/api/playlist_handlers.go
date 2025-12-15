@@ -10,6 +10,7 @@ import (
 	"music-app/backend/internal/utils"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -22,6 +23,99 @@ func getUserID(w http.ResponseWriter, req *http.Request) (int, bool) {
 		return 0, false
 	}
 	return userID, true
+}
+
+// UploadPlaylistCoverHandler godoc
+// @Summary Upload Playlist Cover
+// @Description Upload a cover image for a playlist
+// @Tags Playlists
+// @Accept multipart/form-data
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Playlist ID"
+// @Param cover_image formData file true "Cover Image (Max 10MB)"
+// @Success 200 {object} models.PlaylistResponse
+// @Failure 400 {object} api_errors.ErrorResponse
+// @Failure 401 {object} api_errors.ErrorResponse
+// @Failure 403 {object} api_errors.ErrorResponse
+// @Failure 404 {object} api_errors.ErrorResponse
+// @Router /api/playlists/{id}/cover [post]
+func (r *Router) UploadPlaylistCoverHandler(w http.ResponseWriter, req *http.Request) {
+	// Parse multipart form with size limit
+	if err := req.ParseMultipartForm(MaxUploadSize); err != nil {
+		utils.JSONError(w, "INVALID_REQUEST", "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := getUserID(w, req)
+	if !ok {
+		return
+	}
+
+	vars := mux.Vars(req)
+	playlistID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.JSONError(w, "INVALID_REQUEST", "Invalid playlist ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get cover file
+	file, header, err := req.FormFile("cover_image")
+	if err != nil {
+		utils.JSONError(w, "INVALID_REQUEST", "cover_image is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Validate content type
+	contentType := header.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		utils.JSONError(w, "INVALID_REQUEST", "only image files are allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Sanitize filename
+	sanitizedFilename := sanitizeFilename(header.Filename)
+
+	// Upload to MinIO as square image
+	coverURL, err := r.Storage.UploadImage(req.Context(), file, header.Size, contentType, sanitizedFilename)
+	if err != nil {
+		slog.Error("Failed to upload playlist cover",
+			"error", err,
+			"user_id", userID,
+			"playlist_id", playlistID,
+			"filename", sanitizedFilename)
+		utils.JSONError(w, "INTERNAL_ERROR", "failed to upload cover image", http.StatusInternalServerError)
+		return
+	}
+
+	// Update playlist with cover URL
+	playlistRepo := repository.NewPlaylistRepository(r.Db)
+	updated, err := playlistRepo.UpdatePlaylistCover(playlistID, userID, coverURL)
+	if err != nil {
+		if err.Error() == "playlist not found" {
+			utils.JSONError(w, "NOT_FOUND", "Playlist not found", http.StatusNotFound)
+		} else if err.Error() == "you don't have permission to update this playlist" {
+			utils.JSONError(w, "FORBIDDEN", "You don't have permission to update this playlist", http.StatusForbidden)
+		} else {
+			slog.Error("Failed to update playlist cover", "error", err)
+			utils.JSONError(w, "INTERNAL_ERROR", "Failed to update playlist cover", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	response := models.PlaylistResponse{
+		ID:        updated.ID,
+		Title:     updated.Title,
+		CreatorID: updated.CreatorID,
+		CoverURL:  updated.CoverURL,
+		Privacy:   updated.Privacy,
+		CreatedAt: updated.CreatedAt,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
 
 // CreatePlaylistHandler godoc

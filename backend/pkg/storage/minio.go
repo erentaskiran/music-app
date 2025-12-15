@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -82,6 +83,55 @@ func (m *MinioClient) UploadFile(ctx context.Context, fileReader interface{}, fi
 
 	info, err := m.Client.PutObject(ctx, m.BucketName, newFileName, reader, fileSize, minio.PutObjectOptions{
 		ContentType: contentType,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload object to MinIO bucket %s: %w", m.BucketName, err)
+	}
+
+	// Construct URL
+	protocol := "http"
+	if m.UseSSL {
+		protocol = "https"
+	}
+
+	url := fmt.Sprintf("%s://%s/%s/%s", protocol, m.Endpoint, m.BucketName, info.Key)
+	return url, nil
+}
+
+// UploadImage uploads an image file and crops it to square format
+func (m *MinioClient) UploadImage(ctx context.Context, fileReader interface{}, fileSize int64, contentType, originalName string) (string, error) {
+	// Read the file into memory to process it
+	reader, ok := fileReader.(io.Reader)
+	if !ok || reader == nil {
+		return "", fmt.Errorf("invalid file reader")
+	}
+
+	// Read all data into buffer
+	buf := make([]byte, fileSize)
+	_, err := io.ReadFull(reader, buf)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Crop image to square
+	croppedReader, finalContentType, err := CropToSquare(bytes.NewReader(buf), contentType)
+	if err != nil {
+		return "", fmt.Errorf("failed to crop image: %w", err)
+	}
+
+	// Get the new file size after cropping
+	croppedData, err := io.ReadAll(croppedReader)
+	if err != nil {
+		return "", fmt.Errorf("failed to read cropped image: %w", err)
+	}
+
+	// Generate unique filename
+	ext := filepath.Ext(originalName)
+	newFileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+
+	// Upload the cropped image
+	info, err := m.Client.PutObject(ctx, m.BucketName, newFileName, bytes.NewReader(croppedData), int64(len(croppedData)), minio.PutObjectOptions{
+		ContentType: finalContentType,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload object to MinIO bucket %s: %w", m.BucketName, err)

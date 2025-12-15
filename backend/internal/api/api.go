@@ -91,6 +91,7 @@ func (r *Router) NewRouter() *mux.Router {
 	protected.HandleFunc("/playlists/{id}", r.GetPlaylistHandler).Methods(http.MethodGet, http.MethodOptions)
 	protected.HandleFunc("/playlists/{id}", r.UpdatePlaylistHandler).Methods(http.MethodPut, http.MethodOptions)
 	protected.HandleFunc("/playlists/{id}", r.DeletePlaylistHandler).Methods(http.MethodDelete, http.MethodOptions)
+	protected.HandleFunc("/playlists/{id}/cover", r.UploadPlaylistCoverHandler).Methods(http.MethodPost, http.MethodOptions)
 	protected.HandleFunc("/playlists/{id}/tracks", r.AddTrackToPlaylistHandler).Methods(http.MethodPost, http.MethodOptions)
 	protected.HandleFunc("/playlists/{id}/tracks/{trackId}", r.RemoveTrackFromPlaylistHandler).Methods(http.MethodDelete, http.MethodOptions)
 	protected.Use(authMiddleware.Authenticated)

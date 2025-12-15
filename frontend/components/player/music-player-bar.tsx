@@ -49,7 +49,7 @@ function LikeButton({ trackId, initialIsLiked }: LikeButtonProps) {
     <Button
       variant="ghost"
       size="icon"
-      className={`h-8 w-8 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground hover:text-foreground'}`}
+      className={`h-8 w-8 ${isLiked ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-foreground'}`}
       onClick={handleLikeToggle}
     >
       <Heart className="h-4 w-4" fill={isLiked ? "currentColor" : "none"} />

@@ -545,6 +545,23 @@ export async function updatePlaylist(
 }
 
 /**
+ * Uploads a cover image for a playlist
+ * Requires authentication and must be playlist creator
+ */
+export async function uploadPlaylistCover(
+    playlistId: number,
+    file: File
+): Promise<Playlist> {
+    const formData = new FormData()
+    formData.append('cover_image', file)
+
+    return makeAuthenticatedRequest(`/playlists/${playlistId}/cover`, {
+        method: 'POST',
+        body: formData,
+    })
+}
+
+/**
  * Deletes a playlist
  * Requires authentication and must be playlist creator
  */

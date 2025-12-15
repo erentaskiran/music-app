@@ -334,7 +334,7 @@ function NavItem({ icon: Icon, label, isActive, onClick }: NavItemProps) {
 }
 
 interface PlaylistItemProps {
-  playlist: { id: number; title: string }
+  playlist: { id: number; title: string; cover_url?: string | null }
   onSelect?: () => void
   onDelete?: (id: number) => void
 }
@@ -349,8 +349,17 @@ function PlaylistItem({ playlist, onSelect, onDelete }: PlaylistItemProps) {
             className="flex-1 justify-start gap-3 h-auto py-2 text-muted-foreground hover:text-foreground"
             onClick={onSelect}
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded bg-muted">
-              <ListMusic className="h-5 w-5" />
+            <div className="flex items-center justify-center w-10 h-10 rounded bg-primary overflow-hidden flex-shrink-0">
+              {playlist.cover_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={playlist.cover_url} 
+                  alt={playlist.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <ListMusic className="h-5 w-5 text-black group-hover:text-white transition-colors" />
+              )}
             </div>
             <div className="text-left flex-1 min-w-0">
               <p className="font-medium truncate text-sm">{playlist.title}</p>
