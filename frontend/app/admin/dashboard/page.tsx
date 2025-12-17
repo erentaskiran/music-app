@@ -1,72 +1,117 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import { Music, Upload, Users, TrendingUp } from "lucide-react"
+import { Loader2, Music, Upload, Users, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { makeAuthenticatedRequest } from "@/lib/api"
+import { getAdminDashboard, type AdminDashboardResponse } from "@/lib/api"
 import { withAuth } from "@/lib/auth"
 
-const stats = [
+const statDefinitions = [
   {
+    key: "total_tracks",
     title: "Total Tracks",
-    value: "1,234",
     icon: Music,
-    change: "+12%",
     color: "from-primary/80 to-primary",
+    changeLabel: "from last 30 days",
   },
   {
+    key: "total_uploads",
     title: "Total Uploads",
-    value: "856",
     icon: Upload,
-    change: "+8%",
     color: "from-blue-500 to-cyan-500",
+    changeLabel: "from last 30 days",
   },
   {
+    key: "active_users",
     title: "Active Users",
-    value: "12.5K",
     icon: Users,
-    change: "+23%",
     color: "from-green-500 to-emerald-500",
+    changeLabel: "from last 30 days",
   },
   {
+    key: "streams_today",
     title: "Streams Today",
-    value: "45.2K",
     icon: TrendingUp,
-    change: "+15%",
     color: "from-orange-500 to-red-500",
+    changeLabel: "vs yesterday",
   },
 ]
 
-const recentUploads = [
-  { title: "Summer Vibes", artist: "DJ Maxwell", date: "2 hours ago" },
-  { title: "Midnight Dreams", artist: "Luna Rose", date: "5 hours ago" },
-  { title: "Electric Pulse", artist: "Neon Beats", date: "1 day ago" },
-  { title: "Ocean Waves", artist: "Calm Collective", date: "1 day ago" },
-  { title: "City Lights", artist: "Urban Symphony", date: "2 days ago" },
-]
+const emptyDashboard: AdminDashboardResponse = {
+  stats: {
+    total_tracks: 0,
+    total_tracks_change: 0,
+    total_uploads: 0,
+    total_uploads_change: 0,
+    active_users: 0,
+    active_users_change: 0,
+    streams_today: 0,
+    streams_today_change: 0,
+  },
+  recent_uploads: [],
+}
 
 function DashboardPage() {
-  // Check authentication and refresh token if needed when page loads
+  const [dashboard, setDashboard] = useState<AdminDashboardResponse>(emptyDashboard)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    async function checkAuth() {
+    async function loadDashboard() {
       try {
-        // This will automatically refresh the token if needed
-        await makeAuthenticatedRequest('/me', { method: 'GET' })
-      } catch {
-        // If auth fails, user will be redirected by the error handler
-        console.log('Auth check completed')
+        setIsLoading(true)
+        setError(null)
+        const data = await getAdminDashboard()
+        setDashboard(data)
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err)
+        setError("Failed to load dashboard data.")
+      } finally {
+        setIsLoading(false)
       }
     }
-    checkAuth()
+    loadDashboard()
   }, [])
+
+  const statValues = useMemo(() => {
+    return {
+      total_tracks: dashboard.stats.total_tracks,
+      total_tracks_change: dashboard.stats.total_tracks_change,
+      total_uploads: dashboard.stats.total_uploads,
+      total_uploads_change: dashboard.stats.total_uploads_change,
+      active_users: dashboard.stats.active_users,
+      active_users_change: dashboard.stats.active_users_change,
+      streams_today: dashboard.stats.streams_today,
+      streams_today_change: dashboard.stats.streams_today_change,
+    }
+  }, [dashboard])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
+        {error}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => {
+        {statDefinitions.map((stat, index) => {
           const Icon = stat.icon
+          const value = statValues[stat.key as keyof typeof statValues]
+          const changeKey = `${stat.key}_change` as keyof typeof statValues
+          const change = statValues[changeKey] as number
           return (
             <motion.div
               key={stat.title}
@@ -84,9 +129,11 @@ function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {formatNumber(value as number)}
+                  </div>
                   <p className="text-xs text-green-500 mt-1">
-                    {stat.change} from last month
+                    {formatPercent(change)} {stat.changeLabel}
                   </p>
                 </CardContent>
               </Card>
@@ -109,9 +156,9 @@ function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentUploads.map((upload, index) => (
+                {dashboard.recent_uploads.map((upload, index) => (
                   <motion.div
-                    key={index}
+                    key={upload.id ?? index}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
@@ -124,11 +171,16 @@ function DashboardPage() {
                       <p className="text-sm font-medium text-foreground truncate">
                         {upload.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">{upload.artist}</p>
+                      <p className="text-xs text-muted-foreground">{upload.artist_name}</p>
                     </div>
-                    <div className="text-xs text-muted-foreground">{upload.date}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatRelativeTime(upload.created_at)}
+                    </div>
                   </motion.div>
                 ))}
+                {dashboard.recent_uploads.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No recent uploads yet.</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -181,3 +233,35 @@ function DashboardPage() {
 }
 
 export default withAuth(DashboardPage)
+
+function formatRelativeTime(dateString: string): string {
+  const timestamp = new Date(dateString).getTime()
+  if (Number.isNaN(timestamp)) {
+    return "Just now"
+  }
+  const diff = Date.now() - timestamp
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) return `${days} day${days === 1 ? "" : "s"} ago`
+  if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} ago`
+  if (minutes > 0) return `${minutes} min${minutes === 1 ? "" : "s"} ago`
+  return "Just now"
+}
+
+function formatNumber(value: number): string {
+  if (!Number.isFinite(value)) return "0"
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`
+  return value.toLocaleString("en-US")
+}
+
+function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return "0%"
+  const sign = value > 0 ? "+" : ""
+  const rounded = Math.round(value * 10) / 10
+  return `${sign}${rounded.toFixed(1).replace(/\.0$/, "")}%`
+}

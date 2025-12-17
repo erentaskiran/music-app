@@ -99,6 +99,7 @@ func (r *Router) NewRouter() *mux.Router {
 
 	// Admin routes (requires admin role - verified via database query)
 	admin := router.PathPrefix("/api").Subrouter()
+	admin.HandleFunc("/admin/dashboard", r.GetAdminDashboardHandler).Methods(http.MethodGet, http.MethodOptions)
 	admin.HandleFunc("/tracks/upload", r.CreateTrackHandler).Methods(http.MethodPost, http.MethodOptions)
 	admin.HandleFunc("/albums", r.CreateAlbumHandler).Methods(http.MethodPost, http.MethodOptions)
 	admin.HandleFunc("/albums/{id}", r.DeleteAlbumHandler).Methods(http.MethodDelete, http.MethodOptions)

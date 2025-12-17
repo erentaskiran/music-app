@@ -373,6 +373,35 @@ export interface TrackResponse {
     is_favorited?: boolean
 }
 
+export interface AdminDashboardStats {
+    total_tracks: number
+    total_tracks_change: number
+    total_uploads: number
+    total_uploads_change: number
+    active_users: number
+    active_users_change: number
+    streams_today: number
+    streams_today_change: number
+}
+
+export interface AdminRecentUpload {
+    id: number
+    title: string
+    artist_name: string
+    created_at: string
+}
+
+export interface AdminDashboardResponse {
+    stats: AdminDashboardStats
+    recent_uploads: AdminRecentUpload[]
+}
+
+export async function getAdminDashboard(limit = 5): Promise<AdminDashboardResponse> {
+    return makeAuthenticatedRequest(`/admin/dashboard?limit=${limit}`, {
+        method: 'GET',
+    })
+}
+
 /**
  * Fetches all published tracks
  */
@@ -807,4 +836,3 @@ export async function uploadAvatar(file: File) {
         body: formData,
     })
 }
-
